@@ -1,10 +1,10 @@
 import { Body, Controller, Get, Param, Post, Patch, Query, Req, UseGuards, NotFoundException, ForbiddenException } from "@nestjs/common";
-import { IsInt, IsOptional, IsString, Min, MinLength } from "class-validator";
+import { IsIn, IsInt, IsOptional, IsString, Min, MinLength } from "class-validator";
 import { PrismaService } from "./prisma.service";
 import { CampaignStatus } from "@prisma/client";
 import { JwtAuthGuard } from "./jwt-auth.guard";
 class CreateCampaignDto { @IsString() @MinLength(2) name!:string; @IsString() organizationId!:string; @IsOptional() @IsInt() @Min(0) budgetKopecks?:number; @IsOptional() @IsString() deadline?:string; }
-class UpdateCampaignDto { @IsOptional() @IsString() @MinLength(2) name?:string; @IsOptional() @IsString() status?:string; @IsOptional() @IsInt() @Min(0) budgetKopecks?:number; @IsOptional() @IsString() deadline?:string; }
+class UpdateCampaignDto { @IsOptional() @IsString() @MinLength(2) name?:string; @IsOptional() @IsIn(["SEARCH","NEGOTIATION","BRIEF_ACCEPTED","CONTRACT","CONTENT_CREATION","APPROVAL","PUBLICATION","PAYMENT","COMPLETED","CANCELLED"]) status?:string; @IsOptional() @IsInt() @Min(0) budgetKopecks?:number; @IsOptional() @IsString() deadline?:string; }
 const statuses=["SEARCH","NEGOTIATION","BRIEF_ACCEPTED","CONTRACT","CONTENT_CREATION","APPROVAL","PUBLICATION","PAYMENT","COMPLETED","CANCELLED"];
 @Controller("campaigns") @UseGuards(JwtAuthGuard)
 export class CampaignsController {
@@ -16,11 +16,13 @@ export class CampaignsController {
   return {items:items.map((item:any)=>({...item,budgetKopecks:Number(item.budgetKopecks)})),page,limit,total};
  }
  @Post() async create(@Body() dto:CreateCampaignDto,@Req() req:any){
+  if(!["SUPER_ADMIN","ORG_ADMIN","MANAGER"].includes(req.user.role)) throw new ForbiddenException("Создавать кампании может только команда заказчика");
   const org=await this.db.organization.findUnique({where:{id:dto.organizationId}});
   if(!org) throw new NotFoundException("Организация не найдена");
   const created=await this.db.campaign.create({data:{name:dto.name,organizationId:dto.organizationId,budgetKopecks:BigInt(dto.budgetKopecks??0),deadline:dto.deadline?new Date(dto.deadline):undefined,createdBy:req.user.sub}}); return {...created,budgetKopecks:Number(created.budgetKopecks)};
  }
  @Patch(":id") async update(@Param("id") id:string,@Body() dto:UpdateCampaignDto,@Req() req:any){
+  if(!["SUPER_ADMIN","ORG_ADMIN","MANAGER"].includes(req.user.role)) throw new ForbiddenException("Изменять кампании может только команда заказчика");
   const old=await this.db.campaign.findUnique({where:{id}});
   if(!old) throw new NotFoundException("Кампания не найдена");
   if(req.user.role!=="SUPER_ADMIN"&&old.createdBy!==req.user.sub) throw new ForbiddenException();
