@@ -12,13 +12,13 @@ All routes are prefixed with `/api/v1`. Authenticated routes require `Authorizat
 | POST | /auth/refresh | Rotate refresh token | No |
 | GET | /auth/me | Current JWT identity | Yes |
 | GET | /campaigns | Paginated campaign list | Yes |
-| POST | /campaigns | Create campaign | Yes |
+| GET | /creators | Paginated creator list, optional `q` search | Yes |\n| POST | /creators | Create creator login/profile | Yes |\n| POST | /campaigns | Create campaign | Yes |
 | PATCH | /campaigns/:id | Update campaign/status | Yes |
 | POST | /media/upload-url | Issue short-lived S3 PUT URL | Yes |
 | POST | /media/process | Enqueue FFmpeg processing | Yes |
 
 ## Planned API contract
-- `/creators`: GET, POST; `/creators/:id`: GET, PATCH; `/creators/:id/metrics`: GET; `/creators/:id/price-list`: PUT.
+- `/creators/:id`: GET, PATCH; `/creators/:id/metrics`: GET; `/creators/:id/price-list`: PUT.
 - `/campaigns/:id/creators`: GET, POST; `/campaigns/:id/brief-versions`: GET, POST; `/campaigns/:id/accept-brief`: POST.
 - `/media/:id/comments`: GET, POST; `/media/:id/approve`: POST; `/media/:id/signed-url`: POST.
 - `/contracts`: GET, POST; `/contracts/:id/render`: POST; `/contracts/:id/sign`: POST; `/contracts/:id/acts`: POST.
