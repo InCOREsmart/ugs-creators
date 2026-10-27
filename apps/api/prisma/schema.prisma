@@ -1,41 +1,77 @@
 generator client {
- provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 datasource db {
- provider = "postgresql"
- url = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
-enum UserRole { SUPER_ADMIN ORG_ADMIN MANAGER CREATOR }
-enum CampaignStatus { SEARCH NEGOTIATION BRIEF_ACCEPTED CONTRACT CONTENT_CREATION APPROVAL PUBLICATION PAYMENT COMPLETED CANCELLED }
+enum UserRole {
+  SUPER_ADMIN
+  ORG_ADMIN
+  MANAGER
+  CREATOR
+}
+enum CampaignStatus {
+  SEARCH
+  NEGOTIATION
+  BRIEF_ACCEPTED
+  CONTRACT
+  CONTENT_CREATION
+  APPROVAL
+  PUBLICATION
+  PAYMENT
+  COMPLETED
+  CANCELLED
+}
+enum CreatorTaxStatus {
+  SELF_EMPLOYED
+  IP
+  INDIVIDUAL
+}
 model User {
- id String @id @default(uuid()) @db.Uuid
- email String @unique
- passwordHash String
- fullName String
- role UserRole @default(MANAGER)
- isActive Boolean @default(true)
- refreshHash String?
- createdAt DateTime @default(now())
- updatedAt DateTime @updatedAt
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  passwordHash String
+  fullName     String
+  role         UserRole @default(MANAGER)
+  isActive     Boolean  @default(true)
+  refreshHash  String?
+  creator      Creator?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 model Organization {
- id String @id @default(uuid()) @db.Uuid
- name String
- legalName String?
- inn String?
- createdAt DateTime @default(now())
- campaigns Campaign[]
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  legalName String?
+  inn       String?
+  createdAt DateTime @default(now())
+  campaigns Campaign[]
 }
 model Campaign {
- id String @id @default(uuid()) @db.Uuid
- organizationId String @db.Uuid
- organization Organization @relation(fields: [organizationId], references: [id])
- name String
- status CampaignStatus @default(SEARCH)
- budgetKopecks BigInt @default(0)
- deadline DateTime?
- createdBy String @db.Uuid
- createdAt DateTime @default(now())
- updatedAt DateTime @updatedAt
- @@index([organizationId,status])
+  id             String         @id @default(uuid()) @db.Uuid
+  organizationId String         @db.Uuid
+  organization   Organization   @relation(fields: [organizationId], references: [id])
+  name           String
+  status         CampaignStatus @default(SEARCH)
+  budgetKopecks  BigInt         @default(0)
+  deadline       DateTime?
+  createdBy      String         @db.Uuid
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  @@index([organizationId, status])
+}
+model Creator {
+  id               String          @id @default(uuid()) @db.Uuid
+  userId           String          @unique @db.Uuid
+  user             User            @relation(fields: [userId], references: [id])
+  displayName      String
+  taxStatus        CreatorTaxStatus @default(INDIVIDUAL)
+  priceList        Json            @default("{}")
+  audienceMetrics  Json            @default("{}")
+  engagementRate   Decimal?        @db.Decimal(7,4)
+  fraudScore       Decimal?        @db.Decimal(5,2)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  @@index([displayName])
 }
