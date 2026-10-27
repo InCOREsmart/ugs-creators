@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query, UseGuards, ConflictException } from "@nestjs/common";
+import { Body, Controller, Get, Post, Query, Req, UseGuards, ConflictException, ForbiddenException } from "@nestjs/common";
 import { IsEmail, IsIn, IsObject, IsOptional, IsString, MinLength } from "class-validator";
 import { PrismaService } from "./prisma.service";
 import { Prisma } from "@prisma/client";
@@ -16,13 +16,15 @@ class CreateCreatorDto {
 @Controller("creators") @UseGuards(JwtAuthGuard)
 export class CreatorsController {
  constructor(private db:PrismaService){}
- @Get() async list(@Query("page") pageRaw="1",@Query("limit") limitRaw="20",@Query("q") q=""){
+ @Get() async list(@Query("page") pageRaw="1",@Query("limit") limitRaw="20",@Query("q") q="",@Req() req:any){
+  if(!["SUPER_ADMIN","ORG_ADMIN","MANAGER"].includes(req.user.role)) throw new ForbiddenException("Реестр креаторов доступен только команде заказчика");
   const page=Math.max(1,Number(pageRaw)||1),limit=Math.min(100,Math.max(1,Number(limitRaw)||20));
   const where=q?{displayName:{contains:q,mode:"insensitive" as const}}:{};
   const [items,total]=await Promise.all([this.db.creator.findMany({where,skip:(page-1)*limit,take:limit,orderBy:{updatedAt:"desc"},select:{id:true,displayName:true,taxStatus:true,priceList:true,audienceMetrics:true,engagementRate:true,fraudScore:true,createdAt:true,user:{select:{email:true,fullName:true}}}}),this.db.creator.count({where})]);
   return {items,page,limit,total};
  }
- @Post() async create(@Body() dto:CreateCreatorDto){
+ @Post() async create(@Body() dto:CreateCreatorDto,@Req() req:any){
+  if(!["SUPER_ADMIN","ORG_ADMIN"].includes(req.user.role)) throw new ForbiddenException("Создавать учётные записи креаторов может только администратор");
   const email=dto.email.trim().toLowerCase();
   if(await this.db.user.findUnique({where:{email}})) throw new ConflictException("Пользователь с таким email уже существует");
   return this.db.$transaction(async tx=>{
