@@ -2,25 +2,30 @@
 
 SaaS-платформа управления креаторами для брендов и агентств.
 
-## Design system
-- Основа: чёрный, белый и нейтральные серые.
-- Серо-синий используется только для активной навигации, ссылок, ключевых метрик и основных действий.
-- Раздельные рабочие пространства: заказчик, креатор, администратор.
+## Дизайн
+Чёрно-бело-серая основа; серо-синий акцент используется для активной навигации, ссылок и ключевых действий. Текущий интерфейс — адаптивный дашборд с демонстрационными данными.
 
-## Repository layout
-- `apps/frontend`: React + TypeScript dashboard prototype.
-- `apps/api`: NestJS API bootstrap and health endpoints.
-- `apps/worker`: isolated BullMQ worker process. FFmpeg jobs remain disabled until storage/scanning adapters are configured.
-- `database/schema.sql`: initial PostgreSQL schema.
-- `docker-compose.yml`: API, worker and Redis services.
+## Структура
+- `apps/frontend` — React + TypeScript.
+- `apps/api` — NestJS, JWT auth, Prisma, campaign endpoints, presigned S3 uploads and BullMQ queue producer.
+- `apps/worker` — отдельный BullMQ процесс: ClamAV scan, ffprobe, FFmpeg 360p/720p/1080p, thumbnail, S3 output.
+- `packages/shared` — общие типы.
+- `database/schema.sql` — расширенная начальная SQL-схема.
+- `apps/api/prisma/schema.prisma` — Prisma schema for current API models.
+- `docs/` — architecture, API contract and Russian compliance checklist.
 
-## Local development
-1. Install Node.js 22 and pnpm.
-2. Copy `.env.example` to `.env` and set local values.
-3. Run `pnpm install`.
-4. Start local dependencies and apps as the packages are completed.
+## Запуск локально
+1. Node.js 22 и pnpm 10.
+2. Скопировать `.env.example` в `.env`, указать секреты и доступы к PostgreSQL в РФ и S3-совместимому хранилищу в РФ.
+3. `pnpm install`
+4. `pnpm db:generate`
+5. `pnpm db:push` (только для development; production schema changes should use reviewed migrations).
+6. `docker compose up --build`
+7. Frontend: `pnpm dev:web`; API: `pnpm dev:api`; worker: `pnpm dev:worker`.
 
-Production secrets must never be committed. PostgreSQL, object storage, backups, worker servers and CDN must be selected/configured with Russian data residency confirmed by each provider. PostgreSQL stores metadata and object keys only; media binaries belong in private S3-compatible storage.
+## Важно перед production
+Это активный инженерный каркас, а не готовая к коммерческому запуску система. Авторизация, кампании, выдача presigned upload URL и очередь видео заложены, но нужны интеграционные тесты и проверка сборки в CI. Не реализованы полноценные tenant memberships/permissions, persistent media records and processing-state updates, chunked multipart upload orchestration, private CDN signing, creator CRUD, electronic signatures, actual ORD/FNS/bank provider integrations, accounting reconciliation and legal review. Не подключать реальные выплаты до подтверждения договоров и сценариев провайдера.
 
-## Current state
-The dashboard is a UI prototype with representative sample data. API and worker scaffolding are present; authentication, persistence, S3 multipart upload, FFmpeg processing, payment and ORD integrations are not yet production-ready.
+PostgreSQL хранит только метаданные и object keys, никогда не видео. API не запускает FFmpeg. Для реальных данных использовать только провайдеров с подтверждённым размещением в РФ. Не коммитить `.env`, ключи S3, JWT secrets, банковские и паспортные данные. Публичная доступность репозитория требует отдельной проверки перед загрузкой конфиденциальных данных.
+
+См. `docs/SECURITY-RU.md` перед запуском в production.
