@@ -11,21 +11,28 @@ export class CampaignsController {
  constructor(private db:PrismaService){}
  @Get() async list(@Query("page") pageRaw="1",@Query("limit") limitRaw="20",@Req() req:any){
   const page=Math.max(1,Number(pageRaw)||1),limit=Math.min(100,Math.max(1,Number(limitRaw)||20));
-  const where=req.user.role==="SUPER_ADMIN"?{}:{createdBy:req.user.sub};
+  const where=req.user.role==="SUPER_ADMIN"?{}:{OR:[{createdBy:req.user.sub},{organization:{members:{some:{userId:req.user.sub}}}}]};
   const [items,total]=await Promise.all([this.db.campaign.findMany({where,skip:(page-1)*limit,take:limit,orderBy:{updatedAt:"desc"},include:{organization:{select:{id:true,name:true}}}}),this.db.campaign.count({where})]);
   return {items:items.map((item:any)=>({...item,budgetKopecks:Number(item.budgetKopecks)})),page,limit,total};
  }
  @Post() async create(@Body() dto:CreateCampaignDto,@Req() req:any){
   if(!["SUPER_ADMIN","ORG_ADMIN","MANAGER"].includes(req.user.role)) throw new ForbiddenException("Создавать кампании может только команда заказчика");
-  const org=await this.db.organization.findUnique({where:{id:dto.organizationId}});
+  const org=await this.db.organization.findUnique({where:{id:dto.organizationId},select:{id:true}});
   if(!org) throw new NotFoundException("Организация не найдена");
+  if(req.user.role!=="SUPER_ADMIN"){
+   const membership=await this.db.organizationMember.findUnique({where:{organizationId_userId:{organizationId:dto.organizationId,userId:req.user.sub}}});
+   if(!membership) throw new ForbiddenException("Вы не состоите в этой организации");
+  }
   const created=await this.db.campaign.create({data:{name:dto.name,organizationId:dto.organizationId,budgetKopecks:BigInt(dto.budgetKopecks??0),deadline:dto.deadline?new Date(dto.deadline):undefined,createdBy:req.user.sub}}); return {...created,budgetKopecks:Number(created.budgetKopecks)};
  }
  @Patch(":id") async update(@Param("id") id:string,@Body() dto:UpdateCampaignDto,@Req() req:any){
   if(!["SUPER_ADMIN","ORG_ADMIN","MANAGER"].includes(req.user.role)) throw new ForbiddenException("Изменять кампании может только команда заказчика");
   const old=await this.db.campaign.findUnique({where:{id}});
   if(!old) throw new NotFoundException("Кампания не найдена");
-  if(req.user.role!=="SUPER_ADMIN"&&old.createdBy!==req.user.sub) throw new ForbiddenException();
+  if(req.user.role!=="SUPER_ADMIN"){
+   const membership=await this.db.organizationMember.findUnique({where:{organizationId_userId:{organizationId:old.organizationId,userId:req.user.sub}}});
+   if(old.createdBy!==req.user.sub&&!membership) throw new ForbiddenException("Нет доступа к кампании");
+  }
   if(dto.status&&!statuses.includes(dto.status)) throw new ForbiddenException("Недопустимый статус кампании");
   const updated=await this.db.campaign.update({where:{id},data:{name:dto.name,status:dto.status as CampaignStatus|undefined,budgetKopecks:dto.budgetKopecks===undefined?undefined:BigInt(dto.budgetKopecks),deadline:dto.deadline?new Date(dto.deadline):undefined}}); return {...updated,budgetKopecks:Number(updated.budgetKopecks)};
  }
