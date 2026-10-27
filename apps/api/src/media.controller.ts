@@ -10,9 +10,13 @@ class ProcessDto { @IsString() objectKey!:string; @IsString() campaignId!:string
 export class MediaController {
  constructor(private s3:S3Service,private queue:VideoQueueService,private db:PrismaService){}
  private async assertCampaignAccess(campaignId:string,user:any){
-  const campaign=await this.db.campaign.findUnique({where:{id:campaignId},select:{id:true,createdBy:true}});
+  const campaign=await this.db.campaign.findUnique({where:{id:campaignId},select:{id:true,createdBy:true,organizationId:true}});
   if(!campaign) throw new NotFoundException("Кампания не найдена");
-  if(user.role!=="SUPER_ADMIN"&&campaign.createdBy!==user.sub) throw new ForbiddenException("Нет доступа к кампании");
+  if(user.role!=="SUPER_ADMIN"){
+   const membership=await this.db.organizationMember.findUnique({where:{organizationId_userId:{organizationId:campaign.organizationId,userId:user.sub}}});
+   if(campaign.createdBy!==user.sub&&!membership) throw new ForbiddenException("Нет доступа к кампании");
+  }
+  if(user.role==="CREATOR") throw new ForbiddenException("Креатор не может загружать материалы в кампанию от имени заказчика");
  }
  @Post("upload-url") async uploadUrl(@Body() dto:UploadRequestDto,@Req() req:any){
   await this.assertCampaignAccess(dto.campaignId,req.user);
