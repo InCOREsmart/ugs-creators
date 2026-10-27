@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, Post, Patch, Query, Req, UseGuards, NotFoundException, ForbiddenException } from "@nestjs/common";
 import { IsInt, IsOptional, IsString, Min, MinLength } from "class-validator";
 import { PrismaService } from "./prisma.service";
+import { CampaignStatus } from "@prisma/client";
 import { JwtAuthGuard } from "./jwt-auth.guard";
 class CreateCampaignDto { @IsString() @MinLength(2) name!:string; @IsString() organizationId!:string; @IsOptional() @IsInt() @Min(0) budgetKopecks?:number; @IsOptional() @IsString() deadline?:string; }
 class UpdateCampaignDto { @IsOptional() @IsString() @MinLength(2) name?:string; @IsOptional() @IsString() status?:string; @IsOptional() @IsInt() @Min(0) budgetKopecks?:number; @IsOptional() @IsString() deadline?:string; }
@@ -24,6 +25,6 @@ export class CampaignsController {
   if(!old) throw new NotFoundException("Кампания не найдена");
   if(req.user.role!=="SUPER_ADMIN"&&old.createdBy!==req.user.sub) throw new ForbiddenException();
   if(dto.status&&!statuses.includes(dto.status)) throw new ForbiddenException("Недопустимый статус кампании");
-  const updated=await this.db.campaign.update({where:{id},data:{...dto,budgetKopecks:dto.budgetKopecks===undefined?undefined:BigInt(dto.budgetKopecks),deadline:dto.deadline?new Date(dto.deadline):undefined}}); return {...updated,budgetKopecks:Number(updated.budgetKopecks)};
+  const updated=await this.db.campaign.update({where:{id},data:{name:dto.name,status:dto.status as CampaignStatus|undefined,budgetKopecks:dto.budgetKopecks===undefined?undefined:BigInt(dto.budgetKopecks),deadline:dto.deadline?new Date(dto.deadline):undefined}}); return {...updated,budgetKopecks:Number(updated.budgetKopecks)};
  }
 }
