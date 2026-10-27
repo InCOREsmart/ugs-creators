@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ConflictException } from "@nestjs/common";
+import { Injectable, UnauthorizedException, ConflictException, ForbiddenException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
 import { PrismaService } from "./prisma.service";
@@ -8,6 +8,7 @@ import { randomBytes } from "node:crypto";
 export class AuthService {
  constructor(private db:PrismaService,private jwt:JwtService,private config:ConfigService){}
  async register(input:{email:string;password:string;fullName:string}){
+  if(this.config.get("ALLOW_SELF_REGISTRATION")!=="true") throw new ForbiddenException("Самостоятельная регистрация отключена. Используйте приглашение администратора.");
   const email=input.email.trim().toLowerCase();
   if(input.password.length<12) throw new ConflictException("Пароль должен содержать не менее 12 символов");
   if(await this.db.user.findUnique({where:{email}})) throw new ConflictException("Пользователь уже существует");
