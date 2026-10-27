@@ -20,7 +20,7 @@ export class CreatorsController {
   if(!["SUPER_ADMIN","ORG_ADMIN","MANAGER"].includes(req.user.role)) throw new ForbiddenException("Реестр креаторов доступен только команде заказчика");
   const page=Math.max(1,Number(pageRaw)||1),limit=Math.min(100,Math.max(1,Number(limitRaw)||20));
   const where=q?{displayName:{contains:q,mode:"insensitive" as const}}:{};
-  const [items,total]=await Promise.all([this.db.creator.findMany({where,skip:(page-1)*limit,take:limit,orderBy:{updatedAt:"desc"},select:{id:true,displayName:true,taxStatus:true,priceList:true,audienceMetrics:true,engagementRate:true,fraudScore:true,createdAt:true,user:{select:{email:true,fullName:true}}}}),this.db.creator.count({where})]);
+  const [items,total]=await Promise.all([this.db.creator.findMany({where,skip:(page-1)*limit,take:limit,orderBy:{updatedAt:"desc"},select:{id:true,displayName:true,taxStatus:true,priceList:true,audienceMetrics:true,engagementRate:true,fraudScore:true,createdAt:true}}),this.db.creator.count({where})]);
   return {items,page,limit,total};
  }
  @Post() async create(@Body() dto:CreateCreatorDto,@Req() req:any){
