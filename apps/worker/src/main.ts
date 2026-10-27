@@ -1,5 +1,5 @@
 import { Worker, Job } from "bullmq";
-import IORedis from "ioredis";
+import { Redis } from "ioredis";
 import { S3Client, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { spawn } from "node:child_process";
 import { createWriteStream, createReadStream } from "node:fs";
@@ -9,7 +9,7 @@ import { join } from "node:path";
 import { pipeline } from "node:stream/promises";
 import { randomUUID } from "node:crypto";
 
-const connection = new IORedis(process.env.REDIS_URL ?? "redis://localhost:6379", { maxRetriesPerRequest: null });
+const connection = new Redis(process.env.REDIS_URL ?? "redis://localhost:6379", { maxRetriesPerRequest: null });
 const bucket = process.env.S3_BUCKET;
 const s3 = new S3Client({
  region: process.env.S3_REGION ?? "ru-central1",
