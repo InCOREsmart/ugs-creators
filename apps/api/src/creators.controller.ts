@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Post, Query, UseGuards, ConflictException } from "@nestjs/common";
 import { IsEmail, IsIn, IsObject, IsOptional, IsString, MinLength } from "class-validator";
 import { PrismaService } from "./prisma.service";
+import { Prisma } from "@prisma/client";
 import { JwtAuthGuard } from "./jwt-auth.guard";
 import * as bcrypt from "bcrypt";
 class CreateCreatorDto {
@@ -26,7 +27,7 @@ export class CreatorsController {
   if(await this.db.user.findUnique({where:{email}})) throw new ConflictException("Пользователь с таким email уже существует");
   return this.db.$transaction(async tx=>{
    const user=await tx.user.create({data:{email,fullName:dto.fullName,passwordHash:await bcrypt.hash(dto.temporaryPassword,12),role:"CREATOR"}});
-   return tx.creator.create({data:{userId:user.id,displayName:dto.displayName,taxStatus:dto.taxStatus,priceList:dto.priceList??{},audienceMetrics:dto.audienceMetrics??{}},select:{id:true,displayName:true,taxStatus:true,priceList:true,audienceMetrics:true,createdAt:true,user:{select:{email:true,fullName:true}}}});
+   return tx.creator.create({data:{userId:user.id,displayName:dto.displayName,taxStatus:dto.taxStatus,priceList:(dto.priceList??{}) as Prisma.InputJsonValue,audienceMetrics:(dto.audienceMetrics??{}) as Prisma.InputJsonValue},select:{id:true,displayName:true,taxStatus:true,priceList:true,audienceMetrics:true,createdAt:true,user:{select:{email:true,fullName:true}}}});
   });
  }
 }
