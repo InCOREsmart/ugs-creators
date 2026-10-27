@@ -1,7 +1,7 @@
 {
   "name": "ugs-creators",
   "private": true,
-  "packageManager": "pnpm@10.0.0",
+  "packageManager": "pnpm@10.4.1",
   "scripts": {
     "dev:web": "pnpm --filter @ugs/frontend dev",
     "dev:api": "pnpm --filter @ugs/api dev",
@@ -9,6 +9,17 @@
     "build": "pnpm -r build",
     "db:generate": "pnpm --filter @ugs/api db:generate",
     "db:push": "pnpm --filter @ugs/api db:push"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@nestjs/core",
+      "@prisma/client",
+      "@prisma/engines",
+      "bcrypt",
+      "esbuild",
+      "msgpackr-extract",
+      "prisma"
+    ]
   },
   "devDependencies": {
     "typescript": "^5.7.3"
