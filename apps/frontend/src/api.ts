@@ -1,6 +1,6 @@
 export type ApiError = { statusCode?: number; message?: string | string[]; code?: string };
 export type Creator = { id:string; displayName:string; taxStatus:string; engagementRate:number|null; user?:{fullName:string;email:string}; createdAt:string };
-export type Campaign = { id:string; name:string; status:string; budgetKopecks:number; deadline:string|null; createdAt:string };
+export type Campaign = { id:string; name:string; status:string; budgetKopecks:number|string; deadline:string|null; createdAt:string; organization?:{id:string;name:string} };
 export type Page<T> = { items:T[]; page:number; limit:number; total:number };
 const API_BASE = (import.meta.env.VITE_API_URL ?? "/api/v1").replace(/\/$/, "");
 let accessToken: string | null = null;
@@ -15,7 +15,7 @@ async function request<T>(path:string,init:RequestInit={}):Promise<T>{
 }
 export const api={
  health:()=>request<{status:string}>("/health/ready"),
- login:(email:string,password:string)=>request<{accessToken:string;refreshToken:string;user:unknown}>("/auth/login",{method:"POST",body:JSON.stringify({email,password})}),
+ login:(email:string,password:string)=>request<{accessToken:string;refreshToken:string;tokenType:string;expiresIn:number;user:{id:string;email:string;role:string}}>("/auth/login",{method:"POST",body:JSON.stringify({email,password})}),
  register:(email:string,password:string,fullName:string)=>request<{accessToken:string;refreshToken:string;user:unknown}>("/auth/register",{method:"POST",body:JSON.stringify({email,password,fullName})}),
  creators:(page=1,limit=25,q="")=>request<Page<Creator>>(`/creators?page=${page}&limit=${limit}&q=${encodeURIComponent(q)}`),
  createCreator:(data:Record<string,unknown>)=>request<Creator>("/creators",{method:"POST",body:JSON.stringify(data)}),
