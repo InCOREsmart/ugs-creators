@@ -7,7 +7,8 @@
     "start": "node dist/main",
     "dev": "nest start --watch",
     "db:generate": "prisma generate",
-    "db:push": "prisma db push"
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate deploy"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.750.0",
