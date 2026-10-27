@@ -1,0 +1,48 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    env_file: .env
+    environment:
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks: [backend]
+  worker:
+    build:
+      context: .
+      dockerfile: apps/worker/Dockerfile
+    env_file: .env
+    environment:
+      REDIS_URL: redis://redis:6379
+      VIDEO_CONCURRENCY: "2"
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - worker_tmp:/tmp
+    networks: [backend]
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server","--appendonly","yes","--maxmemory","512mb","--maxmemory-policy","noeviction"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD","redis-cli","ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    networks: [backend]
+volumes:
+  redis_data:
+  worker_tmp:
+networks:
+  backend:
+    driver: bridge
