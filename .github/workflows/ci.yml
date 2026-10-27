@@ -5,7 +5,7 @@ on:
   pull_request:
     branches: [main]
 jobs:
-  frontend:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,3 +18,5 @@ jobs:
           cache: pnpm
       - run: pnpm install --no-frozen-lockfile
       - run: pnpm --filter @ugs/frontend build
+      - run: pnpm --filter @ugs/api build
+      - run: pnpm --filter @ugs/worker build
