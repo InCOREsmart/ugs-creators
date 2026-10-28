@@ -7,6 +7,22 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ugs
+          POSTGRES_PASSWORD: ugs
+          POSTGRES_DB: ugs
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ugs -d ugs"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://ugs:ugs@localhost:5432/ugs?schema=public
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -15,6 +31,10 @@ jobs:
       - run: corepack enable
       - run: corepack prepare pnpm@10.4.1 --activate
       - run: pnpm install --no-frozen-lockfile
+      - name: Apply Prisma migrations to PostgreSQL
+        run: pnpm --filter @ugs/api db:migrate
       - run: pnpm --filter @ugs/frontend build
       - run: pnpm --filter @ugs/api build
+      - name: Test tenant isolation
+        run: pnpm --filter @ugs/api test:tenant-isolation
       - run: pnpm --filter @ugs/worker build

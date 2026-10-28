@@ -19,7 +19,7 @@ SaaS-платформа управления креаторами для бре�
 2. Скопировать `.env.example` в `.env`, указать секреты и доступы к PostgreSQL в РФ и S3-совместимому хранилищу в РФ.
 3. `pnpm install`
 4. `pnpm db:generate`
-5. Для локальной разработки: `pnpm db:push`. Для окружения с миграциями: `pnpm db:migrate` после проверки резервной копии и применимости SQL.
+5. Для чистой PostgreSQL-базы примените версионированные миграции командой `pnpm db:migrate`. Не смешивайте `db:push` и `migrate deploy` на одной базе: если схема уже создана через `db:push`, сначала сделайте резервную копию и отдельно согласуйте baseline через `prisma migrate resolve --applied 20261027000000_init`, только после проверки соответствия существующих таблиц baseline-миграции. Миграции проверяются в CI на PostgreSQL 16.
 6. `docker compose up --build`
 7. Frontend: `pnpm dev:web`; API: `pnpm dev:api`; worker: `pnpm dev:worker`.
 
@@ -38,10 +38,12 @@ pnpm --filter @ugs/api admin:bootstrap
 
 ## Медиа и обработка видео
 
-API создаёт постоянную запись `MediaAsset` при выдаче presigned URL. Состояния: `UPLOAD_PENDING`, `QUEUED`, `PROCESSING`, `READY` и `FAILED`. Воркер обновляет статус и метаданные в PostgreSQL; заказчик с доступом к кампании получает список материалов через `GET /media/campaign/:campaignId`. Примените миграции через `pnpm db:migrate` и пересоберите worker после обновления зависимостей.
+API создаёт постоянную запись `MediaAsset` при выдаче presigned URL. Состояния: `UPLOAD_PENDING`, `QUEUED`, `PROCESSING`, `READY` и `FAILED`. Воркер обновляет статус и метаданные в PostgreSQL; заказчик с доступом к кампании получает список материалов через `GET /media/campaign/:campaignId`. В интерфейсе заказчика доступны загрузка видео и просмотр статусов по кампании.
+
+Назначения креаторов хранятся в `CreatorAssignment`. Команда заказчика назначает креатора через `POST /campaigns/:id/creators`; креатор видит только свои назначенные кампании и отвечает через `PATCH /campaigns/assignments/:id/respond`. Для чистой базы сначала применяется baseline, затем остальные миграции по порядку.
 
 ## Важно перед production
-Это активный инженерный каркас, а не готовая к коммерческому запуску система. Авторизация, кампании, выдача presigned upload URL и очередь видео заложены, но нужны интеграционные тесты и проверка сборки в CI. Реализованы базовые членства в организациях, API организаций и проверки доступа к кампаниям/загрузке медиа; остаются интеграционные тесты изоляции tenants, chunked multipart upload orchestration, private CDN signing, полноценный creator CRUD, electronic signatures, actual ORD/FNS/bank provider integrations, accounting reconciliation and legal review. Не подключать реальные выплаты до подтверждения договоров и сценариев провайдера.
+Это активный инженерный каркас, а не готовая к коммерческому запуску система. Авторизация, кампании, выдача presigned upload URL, очередь видео и назначения креаторов заложены. CI собирает frontend/API/worker и проверяет применение Prisma-миграций на PostgreSQL 16; отдельные интеграционные тесты изоляции tenants всё ещё необходимы. Реализованы базовые членства в организациях, API организаций и проверки доступа к кампаниям/загрузке медиа; остаются интеграционные тесты изоляции tenants, chunked multipart upload orchestration, private CDN signing, полноценный creator CRUD, electronic signatures, actual ORD/FNS/bank provider integrations, accounting reconciliation and legal review. Не подключать реальные выплаты до подтверждения договоров и сценариев провайдера.
 
 PostgreSQL хранит только метаданные и object keys, никогда не видео. API не запускает FFmpeg. Для реальных данных использовать только провайдеров с подтверждённым размещением в РФ. Не коммитить `.env`, ключи S3, JWT secrets, банковские и паспортные данные. Публичная доступность репозитория требует отдельной проверки перед загрузкой конфиденциальных данных.
 
