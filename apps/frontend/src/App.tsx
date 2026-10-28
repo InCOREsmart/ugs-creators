@@ -23,6 +23,8 @@ export default function App() {
   const [emailError, setEmailError] = useState("");
   const [currentPath, setCurrentPath] = useState(() => (window.location.pathname.replace(import.meta.env.BASE_URL, "/").replace(/\/$/, "") || "/"));
   const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [active, setActive] = useState<Section>("Обзор");
   const [query, setQuery] = useState("");
   const [creators, setCreators] = useState<Creator[]>([]);
@@ -115,11 +117,14 @@ export default function App() {
   async function login(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault(); setLoginBusy(true); setError("");
     try {
-      const result = await api.login(email, password);
+      const result = authMode === "register"
+        ? await api.register(email, password, fullName.trim())
+        : await api.login(email, password);
       setAccessToken(result.accessToken);
       setSession(result.user as Session);
       setPassword("");
-    } catch (err) { setError(err instanceof Error ? err.message : "Не удалось войти"); }
+      setFullName("");
+    } catch (err) { setError(err instanceof Error ? err.message : authMode === "register" ? "Не удалось зарегистрироваться" : "Не удалось войти"); }
     finally { setLoginBusy(false); }
   }
   function logout() { setAccessToken(null); setSession(null); setCreators([]); setCampaigns([]); setOrganizations([]); setError(""); }
@@ -142,7 +147,7 @@ export default function App() {
 
   if (!["/", "/login", "/app", "/dashboard"].includes(currentPath)) return <main className="not-found-page"><section className="not-found-card"><img className="brand-logo" src={`${import.meta.env.BASE_URL}creator-logo.svg`} alt="Логотип CREATOR"/><span className="not-found-code">404</span><h1>Кажется, эта страница потерялась.</h1><p>Ссылка ведёт в пустоту. Вернитесь в рабочее пространство, а мы оставим навигацию в порядке.</p><a className="button primary" href={import.meta.env.BASE_URL}>Вернуться в CREATOR</a></section></main>;
 
-  if (!session) return <div className="app-shell login-shell"><main className="main login-main"><div className="content login-content"><div className="brand login-brand"><img className="brand-logo" src={`${import.meta.env.BASE_URL}creator-logo.svg`} alt="Логотип CREATOR" /><span>CREATOR <b>studio</b></span></div><section className="panel login-panel"><div className="eyebrow">ПРОСТРАНСТВО ДЛЯ СОЗДАТЕЛЕЙ</div><h1>Идеи заслуживают сильной реализации.</h1><p>Войдите в CREATOR, чтобы управлять кампаниями, контентом и сотрудничеством в одном месте.</p><form onSubmit={login} className="form-grid"><label>Email<input type="email" autoComplete="username" required value={email} onChange={e => { const value=e.target.value; setEmail(value); setEmailError(value && value.includes("@") && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? "Проверьте адрес: нужен формат name@company.ru." : ""); }} aria-invalid={Boolean(emailError)} aria-describedby="email-hint" placeholder="name@company.ru" autoCapitalize="none" spellCheck={false}/></label><small id="email-hint" className={emailError ? "field-hint field-error" : "field-hint"} aria-live="polite">{emailError || "Рабочая почта, привязанная к вашей учётной записи"}</small><label>Пароль<input type="password" autoComplete="current-password" required value={password} onChange={e => setPassword(e.target.value)} placeholder="Введите пароль"/></label>{error && <div role="alert" className="error-state">{error}</div>}<button className="button primary" disabled={loginBusy || Boolean(emailError)} type="submit">{loginBusy ? <><span className="button-spinner" aria-hidden="true"/>Входим…</> : "Войти"}</button></form></section><footer className="login-footer">CREATOR <span>·</span> Защищённое рабочее пространство</footer></div></main></div>;
+  if (!session) return <div className="app-shell login-shell"><main className="main login-main"><div className="content login-content"><div className="brand login-brand"><img className="brand-logo" src={`${import.meta.env.BASE_URL}creator-logo.svg`} alt="Логотип CREATOR" /><span>CREATOR <b>studio</b></span></div><section className="panel login-panel"><div className="eyebrow">ПРОСТРАНСТВО ДЛЯ СОЗДАТЕЛЕЙ</div><h1>{authMode === "register" ? "Создайте аккаунт CREATOR." : "Идеи заслуживают сильной реализации."}</h1><p>{authMode === "register" ? "Создайте учётную запись для работы с кампаниями и сотрудничеством." : "Войдите в CREATOR, чтобы управлять кампаниями, контентом и сотрудничеством в одном месте."}</p><form onSubmit={login} className="form-grid">{authMode === "register" && <label>Имя и фамилия<input type="text" autoComplete="name" required minLength={2} maxLength={120} value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Как к вам обращаться"/></label>}<label>Email<input type="email" autoComplete="username" required value={email} onChange={e => { const value=e.target.value; setEmail(value); setEmailError(value && value.includes("@") && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? "Проверьте адрес: нужен формат name@company.ru." : ""); }} aria-invalid={Boolean(emailError)} aria-describedby="email-hint" placeholder="name@company.ru" autoCapitalize="none" spellCheck={false}/></label><small id="email-hint" className={emailError ? "field-hint field-error" : "field-hint"} aria-live="polite">{emailError || "Рабочая почта, привязанная к вашей учётной записи"}</small><label>Пароль<input type="password" autoComplete={authMode === "register" ? "new-password" : "current-password"} required minLength={authMode === "register" ? 12 : undefined} value={password} onChange={e => setPassword(e.target.value)} placeholder={authMode === "register" ? "Не менее 12 символов" : "Введите пароль"}/>{authMode === "register" && <small className="field-hint">Минимум 12 символов</small>}</label>{error && <div role="alert" className="error-state">{error}</div>}<button className="button primary" disabled={loginBusy || Boolean(emailError)} type="submit">{loginBusy ? <><span className="button-spinner" aria-hidden="true"/>{authMode === "register" ? "Создаём аккаунт…" : "Входим…"}</> : authMode === "register" ? "Зарегистрироваться" : "Войти"}</button></form><div className="auth-switch"><span>{authMode === "register" ? "Уже есть аккаунт?" : "Впервые в CREATOR?"}</span><button className="text-button" type="button" onClick={() => { setAuthMode(mode => mode === "login" ? "register" : "login"); setError(""); setPassword(""); }}>{authMode === "register" ? "Войти" : "Создать аккаунт"}</button></div></section><footer className="login-footer">CREATOR <span>·</span> Защищённое рабочее пространство</footer></div></main></div>;
 
   return <div className="app-shell">
     <aside className="sidebar">
