@@ -8,11 +8,36 @@ export type MediaAsset = { id:string; campaignId:string; fileName:string; conten
 export type UploadTicket = { uploadUrl:string; objectKey:string; mediaId?:string; requiredHeaders:Record<string,string>; expiresInSeconds:number };
 const CONFIGURED_API_BASE = (import.meta.env.VITE_API_URL ?? "").trim().replace(/\/$/, "");
 const IS_GITHUB_PAGES = typeof window !== "undefined" && window.location.hostname.endsWith("github.io");
+export const IS_DEMO_MODE = IS_GITHUB_PAGES && !CONFIGURED_API_BASE;
 const API_BASE = CONFIGURED_API_BASE || (IS_GITHUB_PAGES ? "" : "/api/v1");
 let accessToken: string | null = null;
+type DemoUser = { id:string; email:string; password:string; fullName:string; role:"CREATOR" };
+const DEMO_USERS_KEY = "creator-demo-users-v1";
+function readDemoUsers():DemoUser[] {
+  try { const value = localStorage.getItem(DEMO_USERS_KEY); return value ? JSON.parse(value) as DemoUser[] : []; }
+  catch { return []; }
+}
+function demoAuth(email:string,password:string,fullName?:string) {
+  const normalizedEmail=email.trim().toLowerCase();
+  const users=readDemoUsers();
+  if (fullName !== undefined) {
+    if (users.some(user=>user.email===normalizedEmail)) throw new Error("Аккаунт с таким email уже зарегистрирован.");
+    const user:DemoUser={id:globalThis.crypto?.randomUUID?.() ?? `demo-${Date.now()}`,email:normalizedEmail,password,fullName:fullName.trim(),role:"CREATOR"};
+    users.push(user);
+    localStorage.setItem(DEMO_USERS_KEY,JSON.stringify(users));
+    return {accessToken:`demo-token-${user.id}`,refreshToken:"demo-refresh-token",tokenType:"Bearer",expiresIn:3600,user:{id:user.id,email:user.email,role:user.role,fullName:user.fullName}};
+  }
+  const user=users.find(item=>item.email===normalizedEmail && item.password===password);
+  if(!user) throw new Error("Неверный email или пароль. Для теста сначала создайте аккаунт.");
+  return {accessToken:`demo-token-${user.id}`,refreshToken:"demo-refresh-token",tokenType:"Bearer",expiresIn:3600,user:{id:user.id,email:user.email,role:user.role,fullName:user.fullName}};
+}
 export function setAccessToken(token:string|null){accessToken=token}
 async function request<T>(path:string,init:RequestInit={}):Promise<T>{
- if (IS_GITHUB_PAGES && !CONFIGURED_API_BASE) throw new Error("Сервер авторизации не подключён: необходимо задать VITE_API_URL с адресом backend API.");
+ if (IS_DEMO_MODE) {
+   if (path.startsWith("/creators") || path.startsWith("/campaigns")) return {items:[],page:1,limit:100,total:0} as T;
+   if (path.startsWith("/organizations") || path.startsWith("/media")) return [] as T;
+   return {} as T;
+ }
  const headers=new Headers(init.headers); headers.set("Accept","application/json");
  if(init.body && !(init.body instanceof FormData)) headers.set("Content-Type","application/json");
  if(accessToken) headers.set("Authorization",`Bearer ${accessToken}`);
@@ -22,8 +47,8 @@ async function request<T>(path:string,init:RequestInit={}):Promise<T>{
 }
 export const api={
  health:()=>request<{status:string}>("/health/ready"),
- login:(email:string,password:string)=>request<{accessToken:string;refreshToken:string;tokenType:string;expiresIn:number;user:{id:string;email:string;role:string}}>("/auth/login",{method:"POST",body:JSON.stringify({email,password})}),
- register:(email:string,password:string,fullName:string)=>request<{accessToken:string;refreshToken:string;user:unknown}>("/auth/register",{method:"POST",body:JSON.stringify({email,password,fullName})}),
+ login:(email:string,password:string)=>IS_DEMO_MODE ? Promise.resolve(demoAuth(email,password) as {accessToken:string;refreshToken:string;tokenType:string;expiresIn:number;user:{id:string;email:string;role:string}}) : request<{accessToken:string;refreshToken:string;tokenType:string;expiresIn:number;user:{id:string;email:string;role:string}}>("/auth/login",{method:"POST",body:JSON.stringify({email,password})}),
+ register:(email:string,password:string,fullName:string)=>IS_DEMO_MODE ? Promise.resolve(demoAuth(email,password,fullName)) : request<{accessToken:string;refreshToken:string;user:unknown}>("/auth/register",{method:"POST",body:JSON.stringify({email,password,fullName})}),
  creators:(page=1,limit=25,q="")=>request<Page<Creator>>(`/creators?page=${page}&limit=${limit}&q=${encodeURIComponent(q)}`),
  createCreator:(data:Record<string,unknown>)=>request<Creator>("/creators",{method:"POST",body:JSON.stringify(data)}),
  campaigns:(page=1,limit=25)=>request<Page<Campaign>>(`/campaigns?page=${page}&limit=${limit}`),
