@@ -25,6 +25,10 @@ export class AuthService {
   if(!user||!user.isActive||!user.refreshHash||!(await bcrypt.compare(token,user.refreshHash))) throw new UnauthorizedException("Refresh token недействителен");
   return this.issue(user.id,user.email,user.role);
  }
+ async logout(userId:string){
+  await this.db.user.update({where:{id:userId},data:{refreshHash:null}});
+  return {success:true};
+ }
  private async issue(id:string,email:string,role:string){
   const accessToken=await this.jwt.signAsync({sub:id,email,role},{secret:this.config.getOrThrow("JWT_ACCESS_SECRET"),expiresIn:"15m"});
   const refreshToken=randomBytes(48).toString("base64url");
