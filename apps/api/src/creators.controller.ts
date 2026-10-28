@@ -19,8 +19,20 @@ export class CreatorsController {
  @Get() async list(@Query("page") pageRaw="1",@Query("limit") limitRaw="20",@Query("q") q="",@Req() req:any){
   if(!["SUPER_ADMIN","ORG_ADMIN","MANAGER"].includes(req.user.role)) throw new ForbiddenException("Реестр креаторов доступен только команде заказчика");
   const page=Math.max(1,Number(pageRaw)||1),limit=Math.min(100,Math.max(1,Number(limitRaw)||20));
-  const where=q?{displayName:{contains:q,mode:"insensitive" as const}}:{};
-  const [items,total]=await Promise.all([this.db.creator.findMany({where,skip:(page-1)*limit,take:limit,orderBy:{updatedAt:"desc"},select:{id:true,displayName:true,taxStatus:true,priceList:true,audienceMetrics:true,engagementRate:true,fraudScore:true,createdAt:true}}),this.db.creator.count({where})]);
+  const search=q?{displayName:{contains:q,mode:"insensitive" as const}}:{};
+  // The creator directory is a shared marketplace. Do not expose tax status, audience
+  // analytics, price lists or fraud scoring to every tenant through a broad list endpoint.
+  const where=req.user.role==="SUPER_ADMIN"?search:{
+   ...search,
+   assignments:{some:{campaign:{OR:[
+    {createdBy:req.user.sub},
+    {organization:{members:{some:{userId:req.user.sub}}}}
+   ]}}}
+  };
+  const [items,total]=await Promise.all([
+   this.db.creator.findMany({where,skip:(page-1)*limit,take:limit,orderBy:{updatedAt:"desc"},select:{id:true,displayName:true,engagementRate:true,createdAt:true}}),
+   this.db.creator.count({where})
+  ]);
   return {items,page,limit,total};
  }
  @Post() async create(@Body() dto:CreateCreatorDto,@Req() req:any){
@@ -29,7 +41,7 @@ export class CreatorsController {
   if(await this.db.user.findUnique({where:{email}})) throw new ConflictException("Пользователь с таким email уже существует");
   return this.db.$transaction(async tx=>{
    const user=await tx.user.create({data:{email,fullName:dto.fullName,passwordHash:await bcrypt.hash(dto.temporaryPassword,12),role:"CREATOR"}});
-   return tx.creator.create({data:{userId:user.id,displayName:dto.displayName,taxStatus:dto.taxStatus,priceList:(dto.priceList??{}) as Prisma.InputJsonValue,audienceMetrics:(dto.audienceMetrics??{}) as Prisma.InputJsonValue},select:{id:true,displayName:true,taxStatus:true,priceList:true,audienceMetrics:true,createdAt:true,user:{select:{email:true,fullName:true}}}});
+   return tx.creator.create({data:{userId:user.id,displayName:dto.displayName,taxStatus:dto.taxStatus,priceList:(dto.priceList??{}) as Prisma.InputJsonValue,audienceMetrics:(dto.audienceMetrics??{}) as Prisma.InputJsonValue},select:{id:true,displayName:true,taxStatus:true,createdAt:true,user:{select:{email:true,fullName:true}}}});
   });
  }
 }
