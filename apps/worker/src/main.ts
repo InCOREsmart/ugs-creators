@@ -8,6 +8,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pipeline } from "node:stream/promises";
 import { randomUUID } from "node:crypto";
+import { PrismaClient } from "@prisma/client";
+const db = new PrismaClient();
 
 const connection = new Redis(process.env.REDIS_URL ?? "redis://localhost:6379", { maxRetriesPerRequest: null });
 const bucket = process.env.S3_BUCKET;
@@ -56,11 +58,20 @@ async function processVideo(job:Job<{objectKey:string;campaignId:string}>){
   await run("ffmpeg",["-nostdin","-y","-ss",String(Math.min(2,Math.max(0,probe.duration/4))),"-i",source,"-frames:v","1","-vf","scale=640:-2",thumb]);
   const thumbnailKey=`previews/${campaignId}/${randomUUID()}.jpg`;
   await s3.send(new PutObjectCommand({Bucket:bucket,Key:thumbnailKey,Body:createReadStream(thumb),ContentType:"image/jpeg",ServerSideEncryption:"AES256"}));
-  return {status:"READY",durationSeconds:probe.duration,width:probe.width,height:probe.height,originalBytes:sourceStat.size,variants:outputs,thumbnailKey};
+  const result={status:"READY",durationSeconds:probe.duration,width:probe.width,height:probe.height,originalBytes:sourceStat.size,variants:outputs,thumbnailKey};
+  await db.mediaAsset.updateMany({where:{objectKey,campaignId},data:{status:"READY",durationSeconds:probe.duration,width:probe.width,height:probe.height,variants:outputs,thumbnailKey,errorMessage:null}});
+  return result;
  }finally{await rm(dir,{recursive:true,force:true});}
 }
-new Worker("video-processing",async job=>{
+const worker=new Worker("video-processing",async job=>{
  if(job.name!=="transcode") throw new Error(`Unsupported job: ${job.name}`);
  return processVideo(job);
 },{connection,concurrency:Number(process.env.VIDEO_CONCURRENCY??2),limiter:{max:4,duration:1000}});
+worker.on("failed",async(job,error)=>{
+ if(!job)return;
+ try { await db.mediaAsset.updateMany({where:{objectKey:job.data.objectKey,campaignId:job.data.campaignId},data:{status:"FAILED",errorMessage:error.message.slice(0,1000)}}); }
+ catch(updateError){console.error("Could not persist media failure state",updateError);}
+});
+process.on("SIGTERM",async()=>{await worker.close();await db.$disconnect();await connection.quit();});
+process.on("SIGINT",async()=>{await worker.close();await db.$disconnect();await connection.quit();});
 console.log("UGS Creators video worker started");
