@@ -11,18 +11,18 @@ const IS_GITHUB_PAGES = typeof window !== "undefined" && window.location.hostnam
 export const IS_DEMO_MODE = IS_GITHUB_PAGES && !CONFIGURED_API_BASE;
 const API_BASE = CONFIGURED_API_BASE || (IS_GITHUB_PAGES ? "" : "/api/v1");
 let accessToken: string | null = null;
-type DemoUser = { id:string; email:string; password:string; fullName:string; role:"SUPER_ADMIN"|"ORG_ADMIN"|"CREATOR" };
+type DemoUser = { id:string; email:string; password:string; fullName:string; role:"SUPER_ADMIN"|"ORG_ADMIN"|"CREATOR"; registration?:Record<string,unknown> };
 const DEMO_USERS_KEY = "creator-demo-users-v1";
 function readDemoUsers():DemoUser[] {
   try { const value = localStorage.getItem(DEMO_USERS_KEY); if (!value) return []; const users=JSON.parse(value) as Array<DemoUser & {role:string}>; const migrated=users.map(user=>({...user,role:(String(user.role)==="MANAGER" ? "SUPER_ADMIN" : user.role) as DemoUser["role"]})); localStorage.setItem(DEMO_USERS_KEY,JSON.stringify(migrated)); return migrated; }
   catch { return []; }
 }
-function demoAuth(email:string,password:string,fullName?:string,requestedRole:"SUPER_ADMIN"|"ORG_ADMIN"|"CREATOR"="SUPER_ADMIN") {
+function demoAuth(email:string,password:string,fullName?:string,requestedRole:"SUPER_ADMIN"|"ORG_ADMIN"|"CREATOR"="SUPER_ADMIN",registration?:Record<string,unknown>) {
   const normalizedEmail=email.trim().toLowerCase();
   const users=readDemoUsers();
   if (fullName !== undefined) {
     if (users.some(user=>user.email===normalizedEmail)) throw new Error("Аккаунт с таким email уже зарегистрирован.");
-    const user:DemoUser={id:globalThis.crypto?.randomUUID?.() ?? `demo-${Date.now()}`,email:normalizedEmail,password,fullName:fullName.trim(),role:requestedRole};
+    const user:DemoUser={id:globalThis.crypto?.randomUUID?.() ?? `demo-${Date.now()}`,email:normalizedEmail,password,fullName:fullName.trim(),role:requestedRole,registration};
     users.push(user);
     localStorage.setItem(DEMO_USERS_KEY,JSON.stringify(users));
     return {accessToken:`demo-token-${user.id}`,refreshToken:"demo-refresh-token",tokenType:"Bearer",expiresIn:3600,user:{id:user.id,email:user.email,role:user.role,fullName:user.fullName}};
@@ -103,7 +103,7 @@ async function request<T>(path:string,init:RequestInit={}):Promise<T>{
 export const api={
  health:()=>request<{status:string}>("/health/ready"),
  login:(email:string,password:string)=>IS_DEMO_MODE ? Promise.resolve(demoAuth(email,password) as {accessToken:string;refreshToken:string;tokenType:string;expiresIn:number;user:{id:string;email:string;role:string}}) : request<{accessToken:string;refreshToken:string;tokenType:string;expiresIn:number;user:{id:string;email:string;role:string}}>("/auth/login",{method:"POST",body:JSON.stringify({email,password})}),
- register:(email:string,password:string,fullName:string,role:"SUPER_ADMIN"|"ORG_ADMIN"|"CREATOR"="SUPER_ADMIN")=>IS_DEMO_MODE ? Promise.resolve(demoAuth(email,password,fullName,role)) : request<{accessToken:string;refreshToken:string;user:unknown}>("/auth/register",{method:"POST",body:JSON.stringify({email,password,fullName})}),
+ register:(email:string,password:string,fullName:string,role:"SUPER_ADMIN"|"ORG_ADMIN"|"CREATOR"="SUPER_ADMIN",registration?:Record<string,unknown>)=>IS_DEMO_MODE ? Promise.resolve(demoAuth(email,password,fullName,role,registration)) : request<{accessToken:string;refreshToken:string;user:unknown}>("/auth/register",{method:"POST",body:JSON.stringify({email,password,fullName,registration})}),
  logout:()=>IS_DEMO_MODE ? Promise.resolve({success:true}) : request<{success:boolean}>("/auth/logout",{method:"POST"}),
  creators:(page=1,limit=25,q="")=>request<Page<Creator>>(`/creators?page=${page}&limit=${limit}&q=${encodeURIComponent(q)}`),
  createCreator:(data:Record<string,unknown>)=>request<Creator>("/creators",{method:"POST",body:JSON.stringify(data)}),
