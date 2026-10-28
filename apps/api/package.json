@@ -23,7 +23,7 @@
     "@nestjs/passport": "^10.0.3",
     "@nestjs/platform-express": "^10.4.15",
     "@nestjs/throttler": "^6.4.0",
-    "@prisma/client": "^6.2.1",
+    "@prisma/client": "^7.10.1",
     "bullmq": "^5.34.3",
     "bcrypt": "^5.1.1",
     "class-transformer": "^0.5.1",
