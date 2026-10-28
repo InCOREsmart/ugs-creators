@@ -19,7 +19,7 @@ SaaS-платформа управления креаторами для бре�
 2. Скопировать `.env.example` в `.env`, указать секреты и доступы к PostgreSQL в РФ и S3-совместимому хранилищу в РФ.
 3. `pnpm install`
 4. `pnpm db:generate`
-5. Для локальной разработки можно использовать `pnpm db:push`. Для чистой PostgreSQL-базы примените версионированные миграции командой `pnpm db:migrate`. Миграции проверяются в CI на PostgreSQL 16.
+5. Для чистой PostgreSQL-базы примените версионированные миграции командой `pnpm db:migrate`. Не смешивайте `db:push` и `migrate deploy` на одной базе: если схема уже создана через `db:push`, сначала сделайте резервную копию и отдельно согласуйте baseline через `prisma migrate resolve --applied 20261027000000_init`, только после проверки соответствия существующих таблиц baseline-миграции. Миграции проверяются в CI на PostgreSQL 16.
 6. `docker compose up --build`
 7. Frontend: `pnpm dev:web`; API: `pnpm dev:api`; worker: `pnpm dev:worker`.
 
