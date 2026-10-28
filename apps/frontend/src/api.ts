@@ -103,7 +103,8 @@ async function request<T>(path:string,init:RequestInit={}):Promise<T>{
 export const api={
  health:()=>request<{status:string}>("/health/ready"),
  login:(email:string,password:string)=>IS_DEMO_MODE ? Promise.resolve(demoAuth(email,password) as {accessToken:string;refreshToken:string;tokenType:string;expiresIn:number;user:{id:string;email:string;role:string}}) : request<{accessToken:string;refreshToken:string;tokenType:string;expiresIn:number;user:{id:string;email:string;role:string}}>("/auth/login",{method:"POST",body:JSON.stringify({email,password})}),
- register:(email:string,password:string,fullName:string,role:"SUPER_ADMIN"|"ORG_ADMIN"|"CREATOR"="SUPER_ADMIN")=>IS_DEMO_MODE ? Promise.resolve(demoAuth(email,password,fullName,role)) : request<{accessToken:string;refreshToken:string;user:unknown}>("/auth/register",{method:"POST",body:JSON.stringify({email,password,fullName,role})}),
+ register:(email:string,password:string,fullName:string,role:"SUPER_ADMIN"|"ORG_ADMIN"|"CREATOR"="SUPER_ADMIN")=>IS_DEMO_MODE ? Promise.resolve(demoAuth(email,password,fullName,role)) : request<{accessToken:string;refreshToken:string;user:unknown}>("/auth/register",{method:"POST",body:JSON.stringify({email,password,fullName})}),
+ logout:()=>IS_DEMO_MODE ? Promise.resolve({success:true}) : request<{success:boolean}>("/auth/logout",{method:"POST"}),
  creators:(page=1,limit=25,q="")=>request<Page<Creator>>(`/creators?page=${page}&limit=${limit}&q=${encodeURIComponent(q)}`),
  createCreator:(data:Record<string,unknown>)=>request<Creator>("/creators",{method:"POST",body:JSON.stringify(data)}),
  campaigns:(page=1,limit=25)=>request<Page<Campaign>>(`/campaigns?page=${page}&limit=${limit}`),
