@@ -4,7 +4,9 @@ import { PrismaService } from "./prisma.service";
 import { CampaignStatus } from "@prisma/client";
 import { JwtAuthGuard } from "./jwt-auth.guard";
 class CreateCampaignDto { @IsString() @MinLength(2) name!:string; @IsString() organizationId!:string; @IsOptional() @IsInt() @Min(0) budgetKopecks?:number; @IsOptional() @IsString() deadline?:string; }
-class AssignCreatorDto { @IsString() creatorId!:string; }\nclass AssignmentResponseDto { @IsIn(["ACCEPTED","DECLINED"]) status!:"ACCEPTED"|"DECLINED"; }\nclass UpdateCampaignDto { @IsOptional() @IsString() @MinLength(2) name?:string; @IsOptional() @IsIn(["SEARCH","NEGOTIATION","BRIEF_ACCEPTED","CONTRACT","CONTENT_CREATION","APPROVAL","PUBLICATION","PAYMENT","COMPLETED","CANCELLED"]) status?:string; @IsOptional() @IsInt() @Min(0) budgetKopecks?:number; @IsOptional() @IsString() deadline?:string; }
+class AssignCreatorDto { @IsString() creatorId!:string; }
+class AssignmentResponseDto { @IsIn(["ACCEPTED","DECLINED"]) status!:"ACCEPTED"|"DECLINED"; }
+class UpdateCampaignDto { @IsOptional() @IsString() @MinLength(2) name?:string; @IsOptional() @IsIn(["SEARCH","NEGOTIATION","BRIEF_ACCEPTED","CONTRACT","CONTENT_CREATION","APPROVAL","PUBLICATION","PAYMENT","COMPLETED","CANCELLED"]) status?:string; @IsOptional() @IsInt() @Min(0) budgetKopecks?:number; @IsOptional() @IsString() deadline?:string; }
 const statuses=["SEARCH","NEGOTIATION","BRIEF_ACCEPTED","CONTRACT","CONTENT_CREATION","APPROVAL","PUBLICATION","PAYMENT","COMPLETED","CANCELLED"];
 @Controller("campaigns") @UseGuards(JwtAuthGuard)
 export class CampaignsController {
