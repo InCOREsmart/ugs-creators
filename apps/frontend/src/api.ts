@@ -3,6 +3,8 @@ export type Creator = { id:string; displayName:string; taxStatus:string; engagem
 export type Campaign = { id:string; name:string; status:string; budgetKopecks:number|string; deadline:string|null; createdAt:string; organization?:{id:string;name:string} };
 export type Page<T> = { items:T[]; page:number; limit:number; total:number };
 export type Organization = { id:string; name:string; legalName?:string|null; inn?:string|null; createdAt:string };
+export type MediaAsset = { id:string; campaignId:string; fileName:string; contentType:string; originalBytes:string; status:"UPLOAD_PENDING"|"QUEUED"|"PROCESSING"|"READY"|"FAILED"; durationSeconds:number|null; width:number|null; height:number|null; variants:unknown; thumbnailKey:string|null; errorMessage:string|null; createdAt:string; updatedAt:string };
+export type UploadTicket = { uploadUrl:string; objectKey:string; mediaId?:string; requiredHeaders:Record<string,string>; expiresInSeconds:number };
 const API_BASE = (import.meta.env.VITE_API_URL ?? "/api/v1").replace(/\/$/, "");
 let accessToken: string | null = null;
 export function setAccessToken(token:string|null){accessToken=token}
@@ -25,6 +27,7 @@ export const api={
  createOrganization:(data:{name:string;legalName?:string;inn?:string})=>request<Organization>("/organizations",{method:"POST",body:JSON.stringify(data)}),
  addOrganizationMember:(id:string,data:{email:string;role:"ORG_ADMIN"|"MANAGER"})=>request<{id:string;organizationId:string;userId:string;role:string}>(`/organizations/${id}/members`,{method:"POST",body:JSON.stringify(data)}),
  createCampaign:(data:{name:string;organizationId:string;budgetKopecks?:number;deadline?:string})=>request<Campaign>("/campaigns",{method:"POST",body:JSON.stringify(data)}),
- requestUpload:(data:{campaignId:string;fileName:string;contentType:string;sizeBytes:number})=>request<{uploadUrl:string;objectKey:string;mediaId?:string}>("/media/upload-url",{method:"POST",body:JSON.stringify(data)}),
+ requestUpload:(data:{campaignId:string;fileName:string;contentType:string;sizeBytes:number})=>request<UploadTicket>("/media/upload-url",{method:"POST",body:JSON.stringify(data)}),
+ media:(campaignId:string)=>request<MediaAsset[]>(`/media/campaign/${encodeURIComponent(campaignId)}`),
  enqueueVideo:(data:{objectKey:string;campaignId:string})=>request<{jobId:string;status:string}>("/media/process",{method:"POST",body:JSON.stringify(data)}),
 };
