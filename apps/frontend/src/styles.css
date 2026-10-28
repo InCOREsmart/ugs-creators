@@ -287,3 +287,5 @@ label small,.field-hint { display:block; margin-top:7px; color:var(--muted); fon
 .login-panel{max-height:none}
 .login-content{padding-bottom:30px}
 @media(max-width:540px){.registration-two-col{grid-template-columns:1fr}.login-panel{padding:20px}}
+
+.agreement-preview{display:flex;flex-direction:column;gap:7px}.agreement-preview details{border:1px solid var(--line-strong);border-radius:11px;padding:10px 12px;background:#fffdf8}.agreement-preview summary{font-size:11px;font-weight:750;color:var(--blue-deep);cursor:pointer}.agreement-preview p{font-size:11px;line-height:1.65;margin:9px 0 1px;color:var(--muted)}
