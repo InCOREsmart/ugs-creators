@@ -242,3 +242,18 @@ label small,.field-hint { display:block; margin-top:7px; color:var(--muted); fon
 
 .auth-switch { display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:7px; margin-top:20px; color:var(--muted); font-size:12px; }
 .auth-switch .text-button { color:var(--accent, #526f86); font:inherit; font-weight:700; cursor:pointer; }
+
+
+/* Own modules test workspace */
+.notice-banner{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 16px;margin-bottom:18px;border:1px solid #c7d4e2;border-radius:14px;background:#f4f7fa;color:#334155;font-size:13px}
+.notice-banner>b{font-size:11px;letter-spacing:.08em;padding:6px 8px;border-radius:6px;background:#dce6f0;color:#334e68}
+.notice-banner>span{flex:1;min-width:220px}
+.module-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.module-card{display:flex;flex-direction:column;align-items:flex-start;gap:12px;padding:16px;border:1px solid var(--border,#e1e6eb);border-radius:12px;background:var(--surface,#fff)}
+.module-card>div{display:flex;flex-direction:column;gap:5px}
+.module-card small{color:var(--muted,#667085);font-size:12px}
+.module-card .status-pill{white-space:normal}
+.module-card .button{margin-top:auto}
+.module-workspace>.panel{margin-top:16px}
+.module-workspace .form-grid-inline{margin:12px 0 16px}
+@media(max-width:640px){.notice-banner{align-items:flex-start}.notice-banner>.button{width:100%}.module-grid{grid-template-columns:1fr}}
