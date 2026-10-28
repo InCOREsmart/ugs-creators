@@ -274,3 +274,16 @@ label small,.field-hint { display:block; margin-top:7px; color:var(--muted); fon
 .assistant-input{display:flex;gap:8px;padding:10px 12px 12px;border-top:1px solid #e9ebe5}.assistant-input input{min-width:0;flex:1;border:1px solid #dfe3dc;border-radius:11px;padding:11px;font:inherit;background:#fff}.assistant-input>button{display:grid;place-items:center;width:40px;border:0;border-radius:11px;background:#263b39;color:#fff;cursor:pointer}.assistant-input>button:disabled{opacity:.4;cursor:default}
 .assistant-launcher{display:flex;align-items:center;gap:9px;padding:13px 17px;border:0;border-radius:999px;background:#263b39;color:#fff;box-shadow:0 8px 30px #263b3940;font-weight:700;cursor:pointer}
 @media(max-width:480px){.creator-assistant{right:10px;bottom:10px}.assistant-window{height:min(540px,calc(100dvh - 20px))}}
+
+/* CREATOR registration details */
+.registration-fields{display:flex;flex-direction:column;gap:12px;grid-column:1/-1}
+.registration-section{display:flex;flex-direction:column;gap:3px;margin-top:8px;padding:12px 0 3px;border-top:1px solid var(--line-strong)}
+.registration-section b{font-size:13px;color:var(--ink)}
+.registration-section span{font-size:11px;color:var(--muted)}
+.registration-two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.consent-row{display:flex!important;flex-direction:row!important;align-items:flex-start;gap:9px!important;font-weight:500!important;line-height:1.5}
+.consent-row input{flex-shrink:0;width:16px;height:16px;margin-top:2px;accent-color:var(--sage-deep)}
+.registration-notice{padding:11px 12px;border-radius:12px;background:#fff0dc;color:#80521e;font-size:11px;line-height:1.5}
+.login-panel{max-height:none}
+.login-content{padding-bottom:30px}
+@media(max-width:540px){.registration-two-col{grid-template-columns:1fr}.login-panel{padding:20px}}
