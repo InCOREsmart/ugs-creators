@@ -35,6 +35,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
       - name: Build frontend
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
         run: pnpm --filter @ugs/frontend build
       - name: Configure SPA fallback
         run: cp apps/frontend/dist/index.html apps/frontend/dist/404.html
