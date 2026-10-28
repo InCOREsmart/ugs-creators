@@ -14,7 +14,7 @@ export class CampaignsController {
  @Get() async list(@Query("page") pageRaw="1",@Query("limit") limitRaw="20",@Req() req:any){
   const page=Math.max(1,Number(pageRaw)||1),limit=Math.min(100,Math.max(1,Number(limitRaw)||20));
   const where=req.user.role==="SUPER_ADMIN"?{}:req.user.role==="CREATOR"?{creatorAssignments:{some:{creator:{userId:req.user.sub}}}}:{OR:[{createdBy:req.user.sub},{organization:{members:{some:{userId:req.user.sub}}}}]};
-  const [items,total]=await Promise.all([this.db.campaign.findMany({where,skip:(page-1)*limit,take:limit,orderBy:{updatedAt:"desc"},include:{organization:{select:{id:true,name:true}},creatorAssignments:{include:{creator:{select:{id:true,displayName:true,user:{select:{email:true,fullName:true}}}}}}}}),this.db.campaign.count({where})]);
+  const [items,total]=await Promise.all([this.db.campaign.findMany({where,skip:(page-1)*limit,take:limit,orderBy:{updatedAt:"desc"},include:{organization:{select:{id:true,name:true}},creatorAssignments:{where:req.user.role==="CREATOR"?{creator:{userId:req.user.sub}}:undefined,include:{creator:{select:{id:true,displayName:true,user:{select:{email:true,fullName:true}}}}}}}}),this.db.campaign.count({where})]);
   return {items:items.map((item:any)=>({...item,budgetKopecks:Number(item.budgetKopecks)})),page,limit,total};
  }
  @Post(":id/creators") async assignCreator(@Param("id") id:string,@Body() dto:AssignCreatorDto,@Req() req:any){
