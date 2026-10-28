@@ -1,6 +1,6 @@
 export type ApiError = { statusCode?: number; message?: string | string[]; code?: string };
 export type Creator = { id:string; displayName:string; taxStatus:string; engagementRate:number|null; user?:{fullName:string;email:string}; createdAt:string };
-export type Campaign = { id:string; name:string; status:string; budgetKopecks:number|string; deadline:string|null; createdAt:string; organization?:{id:string;name:string} };
+export type CreatorAssignment = { id:string; status:"ASSIGNED"|"ACCEPTED"|"DECLINED"; creator?:{id:string;displayName:string;user?:{email:string;fullName:string}} };\nexport type Campaign = { id:string; name:string; status:string; budgetKopecks:number|string; deadline:string|null; createdAt:string; organization?:{id:string;name:string}; creatorAssignments?:CreatorAssignment[] };
 export type Page<T> = { items:T[]; page:number; limit:number; total:number };
 export type Organization = { id:string; name:string; legalName?:string|null; inn?:string|null; createdAt:string };
 export type MediaAsset = { id:string; campaignId:string; fileName:string; contentType:string; originalBytes:string; status:"UPLOAD_PENDING"|"QUEUED"|"PROCESSING"|"READY"|"FAILED"; durationSeconds:number|null; width:number|null; height:number|null; variants:unknown; thumbnailKey:string|null; errorMessage:string|null; createdAt:string; updatedAt:string };
@@ -22,7 +22,7 @@ export const api={
  register:(email:string,password:string,fullName:string)=>request<{accessToken:string;refreshToken:string;user:unknown}>("/auth/register",{method:"POST",body:JSON.stringify({email,password,fullName})}),
  creators:(page=1,limit=25,q="")=>request<Page<Creator>>(`/creators?page=${page}&limit=${limit}&q=${encodeURIComponent(q)}`),
  createCreator:(data:Record<string,unknown>)=>request<Creator>("/creators",{method:"POST",body:JSON.stringify(data)}),
- campaigns:(page=1,limit=25)=>request<Page<Campaign>>(`/campaigns?page=${page}&limit=${limit}`),
+ campaigns:(page=1,limit=25)=>request<Page<Campaign>>(`/campaigns?page=${page}&limit=${limit}`),\n assignCreator:(campaignId:string,creatorId:string)=>request<CreatorAssignment>(`/campaigns/${encodeURIComponent(campaignId)}/creators`,{method:"POST",body:JSON.stringify({creatorId})}),\n respondToAssignment:(assignmentId:string,status:"ACCEPTED"|"DECLINED")=>request<CreatorAssignment>(`/campaigns/assignments/${encodeURIComponent(assignmentId)}/respond`,{method:"PATCH",body:JSON.stringify({status})}),
  organizations:()=>request<Organization[]>("/organizations/mine"),
  createOrganization:(data:{name:string;legalName?:string;inn?:string})=>request<Organization>("/organizations",{method:"POST",body:JSON.stringify(data)}),
  addOrganizationMember:(id:string,data:{email:string;role:"ORG_ADMIN"|"MANAGER"})=>request<{id:string;organizationId:string;userId:string;role:string}>(`/organizations/${id}/members`,{method:"POST",body:JSON.stringify(data)}),
