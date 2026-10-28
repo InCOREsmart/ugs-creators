@@ -22,7 +22,7 @@ export class AuthService {
  }
  async refresh(userId:string,token:string){
   const user=await this.db.user.findUnique({where:{id:userId}});
-  if(!user?.refreshHash||!(await bcrypt.compare(token,user.refreshHash))) throw new UnauthorizedException("Refresh token недействителен");
+  if(!user||!user.isActive||!user.refreshHash||!(await bcrypt.compare(token,user.refreshHash))) throw new UnauthorizedException("Refresh token недействителен");
   return this.issue(user.id,user.email,user.role);
  }
  private async issue(id:string,email:string,role:string){
