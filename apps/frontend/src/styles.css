@@ -238,3 +238,7 @@ label small,.field-hint { display:block; margin-top:7px; color:var(--muted); fon
 .not-found-code { font-size:clamp(68px,15vw,108px); line-height:1; letter-spacing:-7px; font-weight:800; color:var(--blue-deep); text-shadow:0 8px 24px rgba(72,103,132,.13); }
 .not-found-card h1 { margin:18px 0 10px; font-size:clamp(24px,5vw,32px); line-height:1.18; letter-spacing:-1.2px; }
 .not-found-card p { margin:0 0 24px; font-size:12px; line-height:1.8; color:var(--muted); max-width:350px; }
+
+
+.auth-switch { display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:7px; margin-top:20px; color:var(--muted); font-size:12px; }
+.auth-switch .text-button { color:var(--accent, #526f86); font:inherit; font-weight:700; cursor:pointer; }
