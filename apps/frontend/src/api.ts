@@ -108,7 +108,7 @@ export const api={
  creators:(page=1,limit=25,q="")=>request<Page<Creator>>(`/creators?page=${page}&limit=${limit}&q=${encodeURIComponent(q)}`),
  createCreator:(data:Record<string,unknown>)=>request<Creator>("/creators",{method:"POST",body:JSON.stringify(data)}),
  campaigns:(page=1,limit=25)=>request<Page<Campaign>>(`/campaigns?page=${page}&limit=${limit}`),
- updateCampaignStatus:(id:string,status:string)=>request<Campaign>(`/campaigns/${encodeURIComponent(id)}/status`,{method:"PATCH",body:JSON.stringify({status})}),
+ updateCampaignStatus:(id:string,status:string)=>request<Campaign>(`/campaigns/${encodeURIComponent(id)}`,{method:"PATCH",body:JSON.stringify({status})}),
  assignCreator:(campaignId:string,creatorId:string)=>request<CreatorAssignment>(`/campaigns/${encodeURIComponent(campaignId)}/creators`,{method:"POST",body:JSON.stringify({creatorId})}),
  respondToAssignment:(assignmentId:string,status:"ACCEPTED"|"DECLINED")=>request<CreatorAssignment>(`/campaigns/assignments/${encodeURIComponent(assignmentId)}/respond`,{method:"PATCH",body:JSON.stringify({status})}),
  organizations:()=>request<Organization[]>("/organizations/mine"),
