@@ -14,7 +14,7 @@ let accessToken: string | null = null;
 type DemoUser = { id:string; email:string; password:string; fullName:string; role:"SUPER_ADMIN"|"ORG_ADMIN"|"CREATOR" };
 const DEMO_USERS_KEY = "creator-demo-users-v1";
 function readDemoUsers():DemoUser[] {
-  try { const value = localStorage.getItem(DEMO_USERS_KEY); if (!value) return []; const users=JSON.parse(value) as Array<DemoUser & {role:string}>; const migrated=users.map(user=>({...user,role:(user.role==="MANAGER" ? "SUPER_ADMIN" : user.role) as DemoUser["role"]})); localStorage.setItem(DEMO_USERS_KEY,JSON.stringify(migrated)); return migrated; }
+  try { const value = localStorage.getItem(DEMO_USERS_KEY); if (!value) return []; const users=JSON.parse(value) as Array<DemoUser & {role:string}>; const migrated=users.map(user=>({...user,role:(String(user.role)==="MANAGER" ? "SUPER_ADMIN" : user.role) as DemoUser["role"]})); localStorage.setItem(DEMO_USERS_KEY,JSON.stringify(migrated)); return migrated; }
   catch { return []; }
 }
 function demoAuth(email:string,password:string,fullName?:string,requestedRole:"SUPER_ADMIN"|"ORG_ADMIN"|"CREATOR"="SUPER_ADMIN") {
