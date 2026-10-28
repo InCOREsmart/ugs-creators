@@ -1,0 +1,15 @@
+# CREATOR
+
+> CREATOR is a SaaS workspace for managing creator campaigns, content, and collaboration between creators, brands, and agencies.
+
+## Product scope
+
+- Campaign and collaboration workflows for brands and agencies.
+- Creator assignments and campaign participation.
+- Content and media workflow foundations.
+
+## Important notes
+
+- This repository's GitHub Pages deployment is a preview, not the canonical production domain.
+- The production domain and final public page structure have not yet been configured.
+- Do not assume integrations or features are production-ready unless confirmed by the published product documentation.
