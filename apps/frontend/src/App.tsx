@@ -93,7 +93,7 @@ export default function App() {
 
   async function uploadMedia(file:File) {
     if (!mediaCampaignId) { setMediaMessage("Сначала выберите кампанию."); return; }
-    if (!/^video\\/(mp4|quicktime|webm)$/.test(file.type)) { setMediaMessage("Поддерживаются видео MP4, QuickTime и WebM."); return; }
+    if (!/^video\/(mp4|quicktime|webm)$/.test(file.type)) { setMediaMessage("Поддерживаются видео MP4, QuickTime и WebM."); return; }
     if (file.size < 1 || file.size > 20 * 1024 * 1024 * 1024) { setMediaMessage("Размер файла должен быть не больше 20 ГБ."); return; }
     setMediaBusy(true); setMediaMessage("Получаем защищённую ссылку…");
     try {
