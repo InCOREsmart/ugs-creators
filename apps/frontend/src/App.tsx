@@ -104,16 +104,22 @@ export default function App() {
     if (!mediaCampaignId) { setMediaMessage("Сначала выберите кампанию."); return; }
     if (!/^video\/(mp4|quicktime|webm)$/.test(file.type)) { setMediaMessage("Поддерживаются видео MP4, QuickTime и WebM."); return; }
     if (file.size < 1 || file.size > 20 * 1024 * 1024 * 1024) { setMediaMessage("Размер файла должен быть не больше 20 ГБ."); return; }
-    setMediaBusy(true); setMediaMessage("Получаем защищённую ссылку…");
+    setMediaBusy(true); setMediaMessage("Добавляем материал в медиатеку…");
     try {
-      const ticket = await api.requestUpload({campaignId:mediaCampaignId,fileName:file.name,contentType:file.type,sizeBytes:file.size});
-      setMediaMessage("Загружаем файл в хранилище…");
-      const uploaded = await fetch(ticket.uploadUrl,{method:"PUT",headers:ticket.requiredHeaders,body:file});
-      if (!uploaded.ok) throw new Error(`Хранилище отклонило загрузку (${uploaded.status})`);
-      setMediaMessage("Файл загружен. Ставим на проверку и обработку…");
-      await api.enqueueVideo({objectKey:ticket.objectKey,campaignId:mediaCampaignId});
-      await loadMedia(mediaCampaignId);
-      setMediaMessage("Загрузка завершена. Статус обработки обновится после проверки файла.");
+      if (IS_DEMO_MODE) {
+        await api.addLocalMedia({campaignId:mediaCampaignId,fileName:file.name,contentType:file.type,sizeBytes:file.size});
+        await loadMedia(mediaCampaignId);
+        setMediaMessage("Материал добавлен. Внешнее хранилище не требуется.");
+      } else {
+        const ticket = await api.requestUpload({campaignId:mediaCampaignId,fileName:file.name,contentType:file.type,sizeBytes:file.size});
+        setMediaMessage("Загружаем файл в хранилище…");
+        const uploaded = await fetch(ticket.uploadUrl,{method:"PUT",headers:ticket.requiredHeaders,body:file});
+        if (!uploaded.ok) throw new Error(`Хранилище отклонило загрузку (${uploaded.status})`);
+        setMediaMessage("Файл загружен. Ставим на проверку и обработку…");
+        await api.enqueueVideo({objectKey:ticket.objectKey,campaignId:mediaCampaignId});
+        await loadMedia(mediaCampaignId);
+        setMediaMessage("Загрузка завершена. Статус обработки обновится после проверки файла.");
+      }
     } catch (e) { setMediaMessage(e instanceof Error ? e.message : "Не удалось загрузить видео"); }
     finally { setMediaBusy(false); }
   }
