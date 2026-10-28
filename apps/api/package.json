@@ -10,7 +10,8 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate deploy",
     "admin:bootstrap": "node scripts/bootstrap-admin.cjs",
-    "test:tenant-isolation": "node scripts/test-tenant-isolation.cjs"
+    "test:tenant-isolation": "node scripts/test-tenant-isolation.cjs",
+    "test:creator-privacy": "node scripts/test-creator-privacy.cjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.750.0",
