@@ -6,10 +6,13 @@ export type Page<T> = { items:T[]; page:number; limit:number; total:number };
 export type Organization = { id:string; name:string; legalName?:string|null; inn?:string|null; createdAt:string };
 export type MediaAsset = { id:string; campaignId:string; fileName:string; contentType:string; originalBytes:string; status:"UPLOAD_PENDING"|"QUEUED"|"PROCESSING"|"READY"|"FAILED"; durationSeconds:number|null; width:number|null; height:number|null; variants:unknown; thumbnailKey:string|null; errorMessage:string|null; createdAt:string; updatedAt:string };
 export type UploadTicket = { uploadUrl:string; objectKey:string; mediaId?:string; requiredHeaders:Record<string,string>; expiresInSeconds:number };
-const API_BASE = (import.meta.env.VITE_API_URL ?? "/api/v1").replace(/\/$/, "");
+const CONFIGURED_API_BASE = (import.meta.env.VITE_API_URL ?? "").trim().replace(/\/$/, "");
+const IS_GITHUB_PAGES = typeof window !== "undefined" && window.location.hostname.endsWith("github.io");
+const API_BASE = CONFIGURED_API_BASE || (IS_GITHUB_PAGES ? "" : "/api/v1");
 let accessToken: string | null = null;
 export function setAccessToken(token:string|null){accessToken=token}
 async function request<T>(path:string,init:RequestInit={}):Promise<T>{
+ if (IS_GITHUB_PAGES && !CONFIGURED_API_BASE) throw new Error("Сервер авторизации не подключён: необходимо задать VITE_API_URL с адресом backend API.");
  const headers=new Headers(init.headers); headers.set("Accept","application/json");
  if(init.body && !(init.body instanceof FormData)) headers.set("Content-Type","application/json");
  if(accessToken) headers.set("Authorization",`Bearer ${accessToken}`);
