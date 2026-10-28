@@ -23,6 +23,19 @@ SaaS-платформа управления креаторами для бре�
 6. `docker compose up --build`
 7. Frontend: `pnpm dev:web`; API: `pnpm dev:api`; worker: `pnpm dev:worker`.
 
+## Первичное создание администратора
+
+Самостоятельная регистрация по умолчанию выключена. После установки зависимостей и применения схемы/миграций создайте первого администратора **один раз** через безопасную локальную среду, где доступен production или staging `DATABASE_URL`:
+
+```bash
+ADMIN_BOOTSTRAP_EMAIL=admin@example.com \
+ADMIN_BOOTSTRAP_NAME="Platform Administrator" \
+ADMIN_BOOTSTRAP_PASSWORD='use-a-unique-random-password-of-at-least-16-characters' \
+pnpm --filter @ugs/api admin:bootstrap
+```
+
+Используйте уникальный пароль из менеджера паролей; не сохраняйте его в репозитории, shell-скриптах или CI-логах. Скрипт создаёт `SUPER_ADMIN` только если таблица пользователей пуста, иначе завершается без изменений. После успешного запуска удалите bootstrap-переменные из окружения. Команда не предназначена для регулярного создания пользователей.
+
 ## Важно перед production
 Это активный инженерный каркас, а не готовая к коммерческому запуску система. Авторизация, кампании, выдача presigned upload URL и очередь видео заложены, но нужны интеграционные тесты и проверка сборки в CI. Реализованы базовые членства в организациях, API организаций и проверки доступа к кампаниям/загрузке медиа; остаются интеграционные тесты изоляции tenants, persistent media records and processing-state updates, chunked multipart upload orchestration, private CDN signing, полноценный creator CRUD, electronic signatures, actual ORD/FNS/bank provider integrations, accounting reconciliation and legal review. Не подключать реальные выплаты до подтверждения договоров и сценариев провайдера.
 
