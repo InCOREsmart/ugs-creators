@@ -76,7 +76,13 @@ model Campaign {
   @@index([organizationId, status])
 }
 
-enum CreatorAssignmentStatus {\n  ASSIGNED\n  ACCEPTED\n  DECLINED\n}\n\nenum MediaAssetStatus {
+enum CreatorAssignmentStatus {
+  ASSIGNED
+  ACCEPTED
+  DECLINED
+}
+
+enum MediaAssetStatus {
   UPLOAD_PENDING
   QUEUED
   PROCESSING
@@ -120,4 +126,16 @@ model Creator {
   updatedAt        DateTime        @updatedAt
   @@index([displayName])
 }
-\nmodel CreatorAssignment {\n  id        String                  @id @default(uuid()) @db.Uuid\n  campaignId String                 @db.Uuid\n  creatorId String                  @db.Uuid\n  status    CreatorAssignmentStatus @default(ASSIGNED)\n  campaign  Campaign                @relation(fields: [campaignId], references: [id], onDelete: Cascade)\n  creator   Creator                 @relation(fields: [creatorId], references: [id], onDelete: Cascade)\n  createdAt DateTime                @default(now())\n  updatedAt DateTime                @updatedAt\n  @@unique([campaignId, creatorId])\n  @@index([creatorId, status])\n}\n
+
+model CreatorAssignment {
+  id        String                  @id @default(uuid()) @db.Uuid
+  campaignId String                 @db.Uuid
+  creatorId String                  @db.Uuid
+  status    CreatorAssignmentStatus @default(ASSIGNED)
+  campaign  Campaign                @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  creator   Creator                 @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  createdAt DateTime                @default(now())
+  updatedAt DateTime                @updatedAt
+  @@unique([campaignId, creatorId])
+  @@index([creatorId, status])
+}
