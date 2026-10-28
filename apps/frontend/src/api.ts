@@ -85,6 +85,9 @@ function demoRequest<T>(path:string,init:RequestInit={}):T {
   return {items:state.campaigns,page:1,limit:100,total:state.campaigns.length} as T;
  }
  if(path.startsWith("/media")){if(path==="/media/process"&&method==="POST")return {jobId:`job-${Date.now()}`,status:"QUEUED"} as T;if(path==="/media/upload-url")return {uploadUrl:"",objectKey:`local/${Date.now()}`,mediaId:`media-${Date.now()}`,requiredHeaders:{},expiresInSeconds:0} as T;const campaignId=path.split("/").pop();return state.media.filter(m=>m.campaignId===campaignId) as T;}
+ if(path==="/workspace") return {documents:state.documents,payouts:state.payouts,activities:state.activities} as T;
+ const workflowMatch=path.match(/^\/workspace\/(documents|payouts)\/([^/]+)$/);
+ if(workflowMatch&&method==="PATCH"){const collection=workflowMatch[1]==="documents"?"documents":"payouts";const list=state[collection] as Array<{id:string;status:string}>;const item=list.find(x=>x.id===workflowMatch[2]);if(item){item.status=String(body.status||item.status);state.activities.unshift({id:`act-${Date.now()}`,title:collection==="documents"?"Изменён статус документа":"Изменён статус выплаты",detail:`${item.id} · ${item.status}`,date:new Date().toISOString()});writeDemoState(state);}return item as T;}
  return {} as T;
 }
 async function request<T>(path:string,init:RequestInit={}):Promise<T>{
@@ -111,5 +114,7 @@ export const api={
  createCampaign:(data:{name:string;organizationId:string;budgetKopecks?:number;deadline?:string})=>request<Campaign>("/campaigns",{method:"POST",body:JSON.stringify(data)}),
  requestUpload:(data:{campaignId:string;fileName:string;contentType:string;sizeBytes:number})=>request<UploadTicket>("/media/upload-url",{method:"POST",body:JSON.stringify(data)}),
  media:(campaignId:string)=>request<MediaAsset[]>(`/media/campaign/${encodeURIComponent(campaignId)}`),
+ workspace:()=>request<{documents:{id:string;title:string;creator:string;campaign:string;status:string;amount:number}[];payouts:{id:string;creator:string;campaign:string;amount:number;status:string;date:string}[];activities:{id:string;title:string;detail:string;date:string}[]}>("/workspace"),
+ updateWorkflow:(kind:"documents"|"payouts",id:string,status:string)=>request<unknown>(`/workspace/${kind}/${encodeURIComponent(id)}`,{method:"PATCH",body:JSON.stringify({status})}),
  enqueueVideo:(data:{objectKey:string;campaignId:string})=>request<{jobId:string;status:string}>("/media/process",{method:"POST",body:JSON.stringify(data)}),
 };
