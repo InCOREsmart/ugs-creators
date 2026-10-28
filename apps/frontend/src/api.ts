@@ -8,7 +8,7 @@ export type MediaAsset = { id:string; campaignId:string; fileName:string; conten
 export type UploadTicket = { uploadUrl:string; objectKey:string; mediaId?:string; requiredHeaders:Record<string,string>; expiresInSeconds:number };
 const CONFIGURED_API_BASE = (import.meta.env.VITE_API_URL ?? "").trim().replace(/\/$/, "");
 const IS_GITHUB_PAGES = typeof window !== "undefined" && window.location.hostname.endsWith("github.io");
-export const IS_DEMO_MODE = IS_GITHUB_PAGES;
+export const IS_DEMO_MODE = IS_GITHUB_PAGES && !CONFIGURED_API_BASE;
 const API_BASE = CONFIGURED_API_BASE || (IS_GITHUB_PAGES ? "" : "/api/v1");
 let accessToken: string | null = null;
 type DemoUser = { id:string; email:string; password:string; fullName:string; role:"SUPER_ADMIN"|"ORG_ADMIN"|"CREATOR" };
