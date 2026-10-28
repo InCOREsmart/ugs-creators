@@ -80,7 +80,18 @@ export default function App() {
     }
   }, [active, session, campaigns, mediaCampaignId, loadMedia]);
 
-  async function assignCreator(e:React.FormEvent<HTMLFormElement>) {\n    e.preventDefault(); if(!assignmentCampaignId || !assignmentCreatorId)return; setAssignmentBusy(true);setError("");\n    try { await api.assignCreator(assignmentCampaignId,assignmentCreatorId); await loadData(); setAssignmentCreatorId(""); }\n    catch(e) { setError(e instanceof Error ? e.message : "Не удалось назначить креатора"); }\n    finally { setAssignmentBusy(false); }\n  }\n\n  async function respondToAssignment(assignmentId:string,status:"ACCEPTED"|"DECLINED") {\n    setError("");try { await api.respondToAssignment(assignmentId,status); await loadData(); }catch(e){setError(e instanceof Error ? e.message : "Не удалось сохранить ответ");}\n  }\n\n  async function uploadMedia(file:File) {
+  async function assignCreator(e:React.FormEvent<HTMLFormElement>) {
+    e.preventDefault(); if(!assignmentCampaignId || !assignmentCreatorId)return; setAssignmentBusy(true);setError("");
+    try { await api.assignCreator(assignmentCampaignId,assignmentCreatorId); await loadData(); setAssignmentCreatorId(""); }
+    catch(e) { setError(e instanceof Error ? e.message : "Не удалось назначить креатора"); }
+    finally { setAssignmentBusy(false); }
+  }
+
+  async function respondToAssignment(assignmentId:string,status:"ACCEPTED"|"DECLINED") {
+    setError("");try { await api.respondToAssignment(assignmentId,status); await loadData(); }catch(e){setError(e instanceof Error ? e.message : "Не удалось сохранить ответ");}
+  }
+
+  async function uploadMedia(file:File) {
     if (!mediaCampaignId) { setMediaMessage("Сначала выберите кампанию."); return; }
     if (!/^video\\/(mp4|quicktime|webm)$/.test(file.type)) { setMediaMessage("Поддерживаются видео MP4, QuickTime и WebM."); return; }
     if (file.size < 1 || file.size > 20 * 1024 * 1024 * 1024) { setMediaMessage("Размер файла должен быть не больше 20 ГБ."); return; }
