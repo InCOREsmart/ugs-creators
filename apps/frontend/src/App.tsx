@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import CreatorIcon, { type CreatorIconName } from "./CreatorIcon";
 import ModulesPanel from "./ModulesPanel";
+import AssistantWidget from "./AssistantWidget";
 import { api, IS_DEMO_MODE, setAccessToken, type Campaign, type Creator, type MediaAsset, type Organization } from "./api";
 
 type Section = "Обзор" | "Организации" | "Креаторы" | "Кампании" | "Контент" | "Договоры" | "Выплаты" | "Аналитика" | "Модули";
@@ -203,6 +204,7 @@ export default function App() {
         {active === "Модули" && session.role === "SUPER_ADMIN" && IS_DEMO_MODE && <ModulesPanel/>}
         {active === "Аналитика" && <><div className="stat-grid"><Stat icon={<CreatorIcon name="team"/>} label="Креаторы" value={String(creators.length)} note="В реестре"/><Stat icon={<CreatorIcon name="projects"/>} label="Кампании" value={String(campaigns.length)} note="Все этапы воронки"/><Stat icon={<CreatorIcon name="payments"/>} label="Совокупный бюджет" value={money(campaigns.reduce((s,c)=>s+Number(c.budgetKopecks)/100,0))} note="По всем кампаниям"/><Stat icon={<CreatorIcon name="check"/>} label="Завершено" value={String(campaigns.filter(c=>c.status==="COMPLETED").length)} note="Кампании"/></div><section className="panel"><div className="panel-heading"><div><h2>Воронка кампаний</h2><p>Распределение по текущим статусам</p></div></div>{Object.entries(statusName).map(([key,label])=>{const count=campaigns.filter(c=>c.status===key).length;return <div className="campaign-row" key={key}><div className="campaign-info"><b>{label}</b><div className="campaign-meta"><span>{count} кампаний</span></div></div><div className="campaign-end"><div className="progress-track"><span style={{width:(campaigns.length?count/campaigns.length*100:0)+"%"}}/></div></div></div>})}</section><section className="panel"><div className="panel-heading"><div><h2>Последние события</h2><p>Изменения в рабочем пространстве</p></div></div>{workflow.activities.map(a=><div className="campaign-row" key={a.id}><div className="campaign-icon"><CreatorIcon name="check"/></div><div className="campaign-info"><b>{a.title}</b><div className="campaign-meta"><span>{a.detail}</span></div></div><div className="campaign-end"><small>{new Date(a.date).toLocaleDateString("ru-RU")}</small></div></div>)}</section></>}
         {!(active === "Обзор" || active === "Организации" || active === "Креаторы" || active === "Кампании" || active === "Контент" || active === "Договоры" || active === "Выплаты" || active === "Аналитика" || active === "Модули") && <section className="panel"><h2>{active}</h2><p>Рабочее пространство</p></section>}
+        <AssistantWidget role={session.role} name={session.fullName || session.email}/>
         <footer>UGS Creators <span>·</span> <span className="footer-right"><CreatorIcon name="check" size={13}/> Авторизованная сессия</span></footer>
       </div>
     </main>
