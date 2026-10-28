@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Activity, Bell, BriefcaseBusiness, CheckCircle2, ChevronDown, FileText, LayoutDashboard, LogOut, Search, Settings, Users, Video, Wallet, Plus, RefreshCw } from "lucide-react";
-import { api, setAccessToken, type Campaign, type Creator, type Organization } from "./api";
+import { api, setAccessToken, type Campaign, type Creator, type MediaAsset, type Organization } from "./api";
 
 type Section = "Обзор" | "Организации" | "Креаторы" | "Кампании" | "Контент" | "Договоры" | "Выплаты" | "Аналитика";
 type Session = { id: string; email: string; role: string };
@@ -36,6 +36,10 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [loginBusy, setLoginBusy] = useState(false);
+  const [mediaAssets, setMediaAssets] = useState<MediaAsset[]>([]);
+  const [mediaCampaignId, setMediaCampaignId] = useState("");
+  const [mediaBusy, setMediaBusy] = useState(false);
+  const [mediaMessage, setMediaMessage] = useState("");
 
   const loadData = useCallback(async () => {
     if (!session) return;
@@ -58,6 +62,38 @@ export default function App() {
   }, [session, query, campaignOrgId]);
 
   useEffect(() => { void loadData(); }, [loadData]);
+
+  const loadMedia = useCallback(async (campaignId:string) => {
+    if (!campaignId || session?.role === "CREATOR") { setMediaAssets([]); return; }
+    try { setMediaAssets(await api.media(campaignId)); setMediaMessage(""); }
+    catch (e) { setMediaMessage(e instanceof Error ? e.message : "Не удалось загрузить список материалов"); }
+  }, [session]);
+
+  useEffect(() => {
+    if (active === "Контент" && session?.role !== "CREATOR" && campaigns.length) {
+      const id = campaigns.some(c => c.id === mediaCampaignId) ? mediaCampaignId : campaigns[0].id;
+      if (id !== mediaCampaignId) setMediaCampaignId(id);
+      void loadMedia(id);
+    }
+  }, [active, session, campaigns, mediaCampaignId, loadMedia]);
+
+  async function uploadMedia(file:File) {
+    if (!mediaCampaignId) { setMediaMessage("Сначала выберите кампанию."); return; }
+    if (!/^video\\/(mp4|quicktime|webm)$/.test(file.type)) { setMediaMessage("Поддерживаются видео MP4, QuickTime и WebM."); return; }
+    if (file.size < 1 || file.size > 20 * 1024 * 1024 * 1024) { setMediaMessage("Размер файла должен быть не больше 20 ГБ."); return; }
+    setMediaBusy(true); setMediaMessage("Получаем защищённую ссылку…");
+    try {
+      const ticket = await api.requestUpload({campaignId:mediaCampaignId,fileName:file.name,contentType:file.type,sizeBytes:file.size});
+      setMediaMessage("Загружаем файл в хранилище…");
+      const uploaded = await fetch(ticket.uploadUrl,{method:"PUT",headers:ticket.requiredHeaders,body:file});
+      if (!uploaded.ok) throw new Error(`Хранилище отклонило загрузку (${uploaded.status})`);
+      setMediaMessage("Файл загружен. Ставим на проверку и обработку…");
+      await api.enqueueVideo({objectKey:ticket.objectKey,campaignId:mediaCampaignId});
+      await loadMedia(mediaCampaignId);
+      setMediaMessage("Загрузка завершена. Статус обработки обновится после проверки файла.");
+    } catch (e) { setMediaMessage(e instanceof Error ? e.message : "Не удалось загрузить видео"); }
+    finally { setMediaBusy(false); }
+  }
 
   async function login(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault(); setLoginBusy(true); setError("");
@@ -107,16 +143,19 @@ export default function App() {
         {!loading && active === "Обзор" && <div className="stat-grid">
           <Stat icon={<Users/>} label="Креаторы в доступе" value={session.role === "CREATOR" ? "—" : String(creators.length)} note={session.role === "CREATOR" ? "Личный кабинет креатора" : "Записи, доступные вашей учётной записи"}/>
           <Stat icon={<BriefcaseBusiness/>} label="Кампании" value={String(campaigns.length)} note="Кампании, доступные через API"/>
-          <Stat icon={<Video/>} label="Контент" value="—" note="Модуль обработки подключается отдельно"/>
+          <Stat icon={<Video/>} label="Контент" value={String(mediaAssets.length)} note="Медиафайлы отображаются в разделе «Контент»"/>
           <Stat icon={<CheckCircle2/>} label="Соединение" value={error ? "Ошибка" : "API"} note={error ? "Проверьте API и авторизацию" : "Данные получены из backend"}/>
         </div>}
         {(active === "Креаторы" || (active === "Обзор" && session.role !== "CREATOR")) && session.role !== "CREATOR" && <section className="panel creators-panel"><div className="panel-heading creators-heading"><div><h2>Реестр креаторов</h2><p>Реальные записи из API, без тестовых карточек</p></div><div className="table-actions"><label className="table-search"><Search size={15}/><input placeholder="Имя, email..." value={query} onChange={e => setQuery(e.target.value)}/></label><button className="button secondary" onClick={() => void loadData()}><RefreshCw size={15}/>Обновить</button></div></div><div className="table-wrap"><table><thead><tr><th>КРЕАТОР</th><th>EMAIL</th><th>НАЛОГОВЫЙ СТАТУС</th><th>ER</th><th>ДОБАВЛЕН</th></tr></thead><tbody>{filteredCreators.map(c => <tr key={c.id}><td><div className="creator-cell"><div className="avatar avatar-blue">{c.displayName.slice(0,2).toUpperCase()}</div><div><b>{c.displayName}</b><small>{c.user?.fullName ?? "Имя не указано"}</small></div></div></td><td>{c.user?.email ?? "—"}</td><td>{c.taxStatus}</td><td className="numeric">{c.engagementRate == null ? "—" : String(c.engagementRate) + "%"}</td><td>{new Date(c.createdAt).toLocaleDateString("ru-RU")}</td></tr>)}</tbody></table>{!loading && filteredCreators.length === 0 && <div className="empty-state">{error ? "Реестр недоступен до восстановления API." : "В реестре пока нет записей."}</div>}</div><div className="table-footer"><span>Записей: {filteredCreators.length}</span></div></section>}
         {(active === "Кампании" || (active === "Обзор" && session.role === "CREATOR") || session.role === "CREATOR") && <section className="panel"><div className="panel-heading"><div><h2>Кампании</h2><p>Список получен из backend, доступ ограничен сервером</p></div><div className="table-actions">{session.role !== "CREATOR" && <button className="button primary" onClick={() => setShowCreateCampaign(v=>!v)}><Plus size={15}/>Новая кампания</button>}<button className="button secondary" onClick={() => void loadData()}><RefreshCw size={15}/>Обновить</button></div></div>{showCreateCampaign && <form onSubmit={submitCampaign} style={{display:"grid",gap:12,padding:"0 18px 18px",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))"}}><label>Название<input required minLength={2} value={campaignName} onChange={e=>setCampaignName(e.target.value)} placeholder="Название кампании" style={{display:"block",width:"100%",padding:10,marginTop:5,border:"1px solid #d8dce2",borderRadius:8}}/></label><label>Организация<select required value={campaignOrgId} onChange={e=>setCampaignOrgId(e.target.value)} style={{display:"block",width:"100%",padding:10,marginTop:5,border:"1px solid #d8dce2",borderRadius:8}}>{organizations.map(o=><option key={o.id} value={o.id}>{o.name}</option>)}</select></label><label>Бюджет, ₽<input type="number" min="0" step="0.01" value={campaignBudget} onChange={e=>setCampaignBudget(e.target.value)} placeholder="0" style={{display:"block",width:"100%",padding:10,marginTop:5,border:"1px solid #d8dce2",borderRadius:8}}/></label><button className="button primary" type="submit" disabled={!organizations.length}>Создать</button>{!organizations.length && <p>Сначала добавьте организацию в разделе «Организации».</p>}</form>}{campaigns.length === 0 && !loading ? <div className="empty-state">{error ? "Не удалось получить кампании." : "Доступных кампаний пока нет."}</div> : campaigns.map(c => <div className="campaign-row" key={c.id}><div className="campaign-icon"><BriefcaseBusiness/></div><div className="campaign-info"><div className="campaign-title">{c.name}<span className="brand-name">{c.organization?.name ?? "Организация"}</span></div><div className="campaign-meta"><span>Бюджет: {new Intl.NumberFormat("ru-RU",{style:"currency",currency:"RUB",maximumFractionDigits:2}).format(Number(c.budgetKopecks)/100)}</span><span>{c.deadline ? "Дедлайн " + new Date(c.deadline).toLocaleDateString("ru-RU") : "Без дедлайна"}</span></div></div><div className="campaign-end"><span className="status-pill">{statusName[c.status] ?? c.status}</span></div></div>)}</section>}
         {active === "Организации" && <section className="panel"><div className="panel-heading"><div><h2>Организации</h2><p>Команды изолированы на уровне членства и API</p></div>{["SUPER_ADMIN","ORG_ADMIN"].includes(session.role) && <button className="button primary" onClick={()=>setShowCreateOrganization(v=>!v)}><Plus size={15}/>Добавить организацию</button>}</div>{showCreateOrganization && <form onSubmit={submitOrganization} style={{display:"grid",gap:12,padding:"0 18px 18px",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))"}}><label>Название<input required minLength={2} value={organizationName} onChange={e=>setOrganizationName(e.target.value)} placeholder="Название организации" style={{display:"block",width:"100%",padding:10,marginTop:5,border:"1px solid #d8dce2",borderRadius:8}}/></label><label>Юридическое название<input value={organizationLegalName} onChange={e=>setOrganizationLegalName(e.target.value)} placeholder="Необязательно" style={{display:"block",width:"100%",padding:10,marginTop:5,border:"1px solid #d8dce2",borderRadius:8}}/></label><button className="button primary" type="submit">Создать организацию</button></form>}{organizations.length ? organizations.map(o=><div className="campaign-row" key={o.id}><div className="campaign-icon"><BriefcaseBusiness/></div><div className="campaign-info"><div className="campaign-title">{o.name}</div><div className="campaign-meta"><span>{o.legalName || "Юридическое название не указано"}</span><span>Создана {new Date(o.createdAt).toLocaleDateString("ru-RU")}</span></div></div><div className="campaign-end"><span className="status-pill">Доступ есть</span></div></div>) : <div className="empty-state">Нет доступных организаций. Создайте организацию или попросите администратора добавить вас в команду.</div>}</section>}
-        {!(active === "Обзор" || active === "Организации" || active === "Креаторы" || active === "Кампании") && <section className="panel"><div className="panel-heading"><div><h2>{active}</h2><p>Модуль не подключён к рабочим данным API.</p></div></div><div className="empty-state">Раздел не имитирует готовую функциональность. Для включения нужны серверные модели, права доступа и интеграционные тесты.</div></section>}
+        {active === "Контент" && <section className="panel"><div className="panel-heading"><div><h2>Медиатека кампании</h2><p>Файлы загружаются напрямую в S3-совместимое хранилище, затем проходят проверку и обработку.</p></div><button className="button secondary" disabled={!mediaCampaignId || mediaBusy} onClick={() => void loadMedia(mediaCampaignId)}><RefreshCw size={15}/>Обновить</button></div>{session.role === "CREATOR" ? <div className="empty-state">Кабинет креатора. Назначенные кампании появятся здесь после подключения механизма приглашений и назначений. Материалы заказчика не отображаются в кабинете креатора.</div> : <><div style={{display:"grid",gap:12,padding:"0 18px 18px",gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))"}}><label>Кампания<select value={mediaCampaignId} onChange={e=>setMediaCampaignId(e.target.value)} style={{display:"block",width:"100%",padding:10,marginTop:5,border:"1px solid #d8dce2",borderRadius:8}}><option value="">Выберите кампанию</option>{campaigns.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label><label>Загрузить видео<input type="file" accept="video/mp4,video/quicktime,video/webm" disabled={!mediaCampaignId || mediaBusy} onChange={e=>{const file=e.currentTarget.files?.[0];if(file)void uploadMedia(file);e.currentTarget.value="";}} style={{display:"block",width:"100%",padding:8,marginTop:5}}/><small>MP4, MOV/QuickTime или WebM, до 20 ГБ</small></label></div>{mediaMessage && <div className="empty-state" role="status" style={{margin:"0 18px 16px"}}>{mediaBusy && "⏳ "}{mediaMessage}</div>}<div className="table-wrap"><table><thead><tr><th>ФАЙЛ</th><th>РАЗМЕР</th><th>СТАТУС</th><th>ДЕТАЛИ</th><th>ДОБАВЛЕН</th></tr></thead><tbody>{mediaAssets.map(asset=><tr key={asset.id}><td><div className="creator-cell"><div className="avatar avatar-blue"><Video size={16}/></div><div><b>{asset.fileName}</b><small>{asset.contentType}</small></div></div></td><td>{formatBytes(asset.originalBytes)}</td><td><span className="status-pill">{mediaStatus[asset.status] ?? asset.status}</span></td><td>{asset.status === "FAILED" ? (asset.errorMessage || "Ошибка обработки") : asset.durationSeconds ? `${Math.round(asset.durationSeconds)} сек · ${asset.width ?? "?"}×${asset.height ?? "?"}` : asset.status === "READY" ? "Готово к использованию" : "Проверка / обработка"}</td><td>{new Date(asset.createdAt).toLocaleDateString("ru-RU")}</td></tr>)}</tbody></table>{!mediaAssets.length && <div className="empty-state">{campaigns.length ? "Для этой кампании пока нет загруженных материалов." : "Сначала создайте кампанию в разделе «Кампании»."}</div>}</div></>}</section>}
+        {!(active === "Обзор" || active === "Организации" || active === "Креаторы" || active === "Кампании" || active === "Контент") && <section className="panel"><div className="panel-heading"><div><h2>{active}</h2><p>Модуль не подключён к рабочим данным API.</p></div></div><div className="empty-state">Раздел не имитирует готовую функциональность. Для включения нужны серверные модели, права доступа и интеграционные тесты.</div></section>}
         <footer>UGS Creators <span>·</span> <span className="footer-right"><CheckCircle2 size={13}/> Авторизованная сессия</span></footer>
       </div>
     </main>
   </div>;
 }
+const mediaStatus:Record<string,string> = {UPLOAD_PENDING:"Ожидает загрузки",QUEUED:"В очереди",PROCESSING:"Обрабатывается",READY:"Готов",FAILED:"Ошибка"};
+function formatBytes(value:string|number){const bytes=Number(value);if(!Number.isFinite(bytes)||bytes<0)return "—";if(bytes<1024)return `${bytes} Б`;const units=["КБ","МБ","ГБ","ТБ"];let n=bytes/1024,i=0;while(n>=1024&&i<units.length-1){n/=1024;i++;}return `${n.toLocaleString("ru-RU",{maximumFractionDigits:1})} ${units[i]}`;}
 function Stat({icon,label,value,note}:{icon:React.ReactNode;label:string;value:string;note:string}){return <div className="stat-card"><div className="stat-top"><span className="stat-icon">{icon}</span></div><div className="stat-label">{label}</div><div className="stat-value">{value}</div><div className="stat-bottom"><span className="stat-note">{note}</span></div></div>}
