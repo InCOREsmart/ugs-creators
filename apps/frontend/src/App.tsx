@@ -38,7 +38,7 @@ export default function App() {
   const [fullName, setFullName] = useState("");
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [registerRole, setRegisterRole] = useState<"ORG_ADMIN"|"CREATOR">("ORG_ADMIN");
-  const [registration, setRegistration] = useState({phone:"",legalName:"",taxStatus:"SELF_EMPLOYED",taxId:"",companyInn:"",kpp:"",ogrn:"",legalAddress:"",bankName:"",bankBik:"",bankAccount:"",bankCorrAccount:"",accountHolder:"",acceptTerms:false,acceptPrivacy:false,acceptOffer:false});
+  const [registration, setRegistration] = useState({phone:"",legalName:"",companyLegalName:"",taxStatus:"SELF_EMPLOYED",taxId:"",companyInn:"",kpp:"",ogrn:"",legalAddress:"",bankName:"",bankBik:"",bankAccount:"",bankCorrAccount:"",accountHolder:"",acceptTerms:false,acceptPrivacy:false,acceptOffer:false});
   const updateRegistration = (key:keyof typeof registration,value:string|boolean) => setRegistration(current=>({...current,[key]:value}));
   const [active, setActive] = useState<Section>("Обзор");
   const [query, setQuery] = useState("");
@@ -185,7 +185,7 @@ export default function App() {
 </> : <>
 <div className="registration-section"><b>Реквизиты бизнеса</b><span>Для договоров и закрывающих документов</span></div>
 <label>Название бренда / компании<input required value={registration.legalName} onChange={e=>updateRegistration("legalName",e.target.value)} placeholder="Название для отображения"/></label>
-<label>Полное юридическое наименование<input required value={registration.companyInn /* separate field below maps legal name */} onChange={e=>updateRegistration("companyInn",e.target.value)} placeholder="Например, ООО «Компания»"/></label>
+<label>Полное юридическое наименование<input required value={registration.companyLegalName} onChange={e=>updateRegistration("companyLegalName",e.target.value)} placeholder="Например, ООО «Компания»"/></label>
 <label>ИНН организации<input required inputMode="numeric" value={registration.taxId} onChange={e=>updateRegistration("taxId",e.target.value)} placeholder="ИНН"/></label>
 <div className="registration-two-col"><label>КПП<input value={registration.kpp} onChange={e=>updateRegistration("kpp",e.target.value)} placeholder="КПП"/></label><label>ОГРН / ОГРНИП<input value={registration.ogrn} onChange={e=>updateRegistration("ogrn",e.target.value)} placeholder="ОГРН"/></label></div>
 <label>Юридический адрес<input required value={registration.legalAddress} onChange={e=>updateRegistration("legalAddress",e.target.value)} placeholder="Адрес регистрации"/></label>
