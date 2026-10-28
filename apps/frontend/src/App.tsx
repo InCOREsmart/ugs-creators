@@ -166,8 +166,8 @@ export default function App() {
 
   return <div className="app-shell">
     <aside className="sidebar">
-      <div className="brand"><img className="brand-logo" src="/creator-logo.svg" alt="Логотип CREATOR" /><span>CREATOR <b>studio</b></span></div>
-      <div className="workspace"><img className="workspace-logo" src="/creator-logo.svg" alt="" /><span className="workspace-copy"><b>{roleName[session.role] ?? "Рабочее пространство"}</b><small>{session.fullName || session.email}</small></span></div>
+      <div className="brand"><img className="brand-logo" src={`${import.meta.env.BASE_URL}creator-logo.svg`} alt="Логотип CREATOR" /><span>CREATOR <b>studio</b></span></div>
+      <div className="workspace"><img className="workspace-logo" src={`${import.meta.env.BASE_URL}creator-logo.svg`} alt="" /><span className="workspace-copy"><b>{roleName[session.role] ?? "Рабочее пространство"}</b><small>{session.fullName || session.email}</small></span></div>
       {session.role !== "CREATOR" && <label className="searchbox"><CreatorIcon name="search" size={16}/><input placeholder="Найти креатора или кампанию" value={query} onChange={e => setQuery(e.target.value)}/></label>}
       <div className="nav-label">{session.role === "SUPER_ADMIN" ? "УПРАВЛЕНИЕ ПЛАТФОРМОЙ" : session.role === "ORG_ADMIN" ? "РАБОТА БРЕНДА" : "МОЯ РАБОТА"}</div>
       <nav>{(session.role === "SUPER_ADMIN" ? nav.filter(item => item.label !== "Модули" || IS_DEMO_MODE) : session.role === "ORG_ADMIN" ? nav.filter(item => ["Обзор","Организации","Креаторы","Кампании","Контент","Договоры","Выплаты","Аналитика"].includes(item.label)) : nav.filter(item => ["Обзор","Кампании","Контент","Договоры","Выплаты"].includes(item.label))).map(({ label, icon }) => <button key={label} className={active === label ? "nav-item active" : "nav-item"} onClick={() => setActive(label)}><CreatorIcon name={icon} size={17}/><span>{session.role === "SUPER_ADMIN" && label === "Организации" ? "Бренды" : label === "Обзор" && session.role === "SUPER_ADMIN" ? "Главная" : label}</span>{label === "Кампании" && campaigns.length > 0 && <em>{campaigns.length}</em>}</button>)}</nav>
