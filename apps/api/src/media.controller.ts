@@ -37,8 +37,14 @@ export class MediaController {
   const asset=await this.db.mediaAsset.findUnique({where:{objectKey:dto.objectKey}});
   if(!asset||asset.campaignId!==dto.campaignId) throw new NotFoundException("Загрузка не найдена");
   if(asset.status!=="UPLOAD_PENDING"&&asset.status!=="FAILED") throw new BadRequestException("Материал уже поставлен в обработку или обработан");
-  const queued=await this.queue.enqueue(dto);
-  await this.db.mediaAsset.update({where:{id:asset.id},data:{status:"QUEUED",jobId:String(queued.jobId),errorMessage:null}});
-  return {...queued,mediaId:asset.id};
+  await this.db.mediaAsset.update({where:{id:asset.id},data:{status:"QUEUED",errorMessage:null}});
+  try {
+   const queued=await this.queue.enqueue(dto);
+   await this.db.mediaAsset.update({where:{id:asset.id},data:{jobId:String(queued.jobId)}});
+   return {...queued,mediaId:asset.id};
+  } catch(error) {
+   await this.db.mediaAsset.update({where:{id:asset.id},data:{status:"FAILED",errorMessage:"Не удалось поставить материал в очередь"}});
+   throw error;
+  }
  }
 }
