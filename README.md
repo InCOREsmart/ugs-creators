@@ -23,6 +23,10 @@ SaaS-платформа управления креаторами для бре�
 6. `docker compose up --build`
 7. Frontend: `pnpm dev:web`; API: `pnpm dev:api`; worker: `pnpm dev:worker`.
 
+## Авторизация и регистрация
+
+Для публикации frontend через GitHub Pages задайте в настройках репозитория **Settings → Secrets and variables → Actions → Variables** переменную `VITE_API_URL` с публичным HTTPS-адресом backend API (без завершающего `/`, например `https://api.example.com/api/v1`). Без неё статическая страница не может выполнять вход и регистрацию. На backend задайте `CORS_ORIGINS` с доменом GitHub Pages и `ALLOW_SELF_REGISTRATION=true`, если открытая регистрация разрешена.
+
 ## Первичное создание администратора
 
 Самостоятельная регистрация по умолчанию выключена. После установки зависимостей и применения схемы/миграций создайте первого администратора **один раз** через безопасную локальную среду, где доступен production или staging `DATABASE_URL`:
