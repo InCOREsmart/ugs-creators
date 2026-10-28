@@ -72,7 +72,39 @@ model Campaign {
   createdBy      String         @db.Uuid
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
+  mediaAssets    MediaAsset[]
   @@index([organizationId, status])
+}
+
+enum MediaAssetStatus {
+  UPLOAD_PENDING
+  QUEUED
+  PROCESSING
+  READY
+  FAILED
+}
+
+model MediaAsset {
+  id             String           @id @default(uuid()) @db.Uuid
+  campaignId     String           @db.Uuid
+  campaign       Campaign         @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  createdBy      String           @db.Uuid
+  objectKey      String           @unique
+  fileName       String
+  contentType    String
+  originalBytes  BigInt
+  status         MediaAssetStatus @default(UPLOAD_PENDING)
+  jobId          String?
+  durationSeconds Float?
+  width          Int?
+  height         Int?
+  variants       Json?
+  thumbnailKey   String?
+  errorMessage   String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  @@index([campaignId, status])
+  @@index([createdBy, createdAt])
 }
 model Creator {
   id               String          @id @default(uuid()) @db.Uuid
