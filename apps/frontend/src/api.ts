@@ -11,18 +11,18 @@ const IS_GITHUB_PAGES = typeof window !== "undefined" && window.location.hostnam
 export const IS_DEMO_MODE = IS_GITHUB_PAGES;
 const API_BASE = CONFIGURED_API_BASE || (IS_GITHUB_PAGES ? "" : "/api/v1");
 let accessToken: string | null = null;
-type DemoUser = { id:string; email:string; password:string; fullName:string; role:"MANAGER" };
+type DemoUser = { id:string; email:string; password:string; fullName:string; role:"SUPER_ADMIN"|"ORG_ADMIN"|"CREATOR" };
 const DEMO_USERS_KEY = "creator-demo-users-v1";
 function readDemoUsers():DemoUser[] {
   try { const value = localStorage.getItem(DEMO_USERS_KEY); return value ? JSON.parse(value) as DemoUser[] : []; }
   catch { return []; }
 }
-function demoAuth(email:string,password:string,fullName?:string) {
+function demoAuth(email:string,password:string,fullName?:string,requestedRole:"SUPER_ADMIN"|"ORG_ADMIN"|"CREATOR"="SUPER_ADMIN") {
   const normalizedEmail=email.trim().toLowerCase();
   const users=readDemoUsers();
   if (fullName !== undefined) {
     if (users.some(user=>user.email===normalizedEmail)) throw new Error("Аккаунт с таким email уже зарегистрирован.");
-    const user:DemoUser={id:globalThis.crypto?.randomUUID?.() ?? `demo-${Date.now()}`,email:normalizedEmail,password,fullName:fullName.trim(),role:"MANAGER"};
+    const user:DemoUser={id:globalThis.crypto?.randomUUID?.() ?? `demo-${Date.now()}`,email:normalizedEmail,password,fullName:fullName.trim(),role:requestedRole};
     users.push(user);
     localStorage.setItem(DEMO_USERS_KEY,JSON.stringify(users));
     return {accessToken:`demo-token-${user.id}`,refreshToken:"demo-refresh-token",tokenType:"Bearer",expiresIn:3600,user:{id:user.id,email:user.email,role:user.role,fullName:user.fullName}};
@@ -66,6 +66,7 @@ function readDemoState():DemoState {
  const state=seedDemoState(); localStorage.setItem(DEMO_STATE_KEY,JSON.stringify(state)); return state;
 }
 function writeDemoState(state:DemoState){localStorage.setItem(DEMO_STATE_KEY,JSON.stringify(state));}
+function requestedCampaignVisible(c:Campaign){return true;}
 function demoRequest<T>(path:string,init:RequestInit={}):T {
  const state=readDemoState(); const method=(init.method||"GET").toUpperCase(); const body=init.body && typeof init.body==="string" ? JSON.parse(init.body) : {};
  if(path.startsWith("/creators")) {
@@ -82,7 +83,7 @@ function demoRequest<T>(path:string,init:RequestInit={}):T {
   const assign=path.match(/\/campaigns\/([^/]+)\/creators/);
   if(assign){const campaign=state.campaigns.find(c=>c.id===assign[1]);const creator=state.creators.find(c=>c.id===body.creatorId);if(campaign&&creator){campaign.creatorAssignments=[...(campaign.creatorAssignments||[]),{id:`assign-${Date.now()}`,status:"ASSIGNED",creator:{id:creator.id,displayName:creator.displayName,user:creator.user}}];writeDemoState(state);return campaign.creatorAssignments[campaign.creatorAssignments.length-1] as T;} }
   if(path==="/campaigns"&&method==="POST"){const org=state.organizations.find(o=>o.id===body.organizationId);const item:Campaign={id:`campaign-${Date.now()}`,name:String(body.name||"Новая кампания"),status:"SEARCH",budgetKopecks:Number(body.budgetKopecks||0),deadline:body.deadline as string||null,createdAt:new Date().toISOString(),organization:org,creatorAssignments:[]};state.campaigns.unshift(item);writeDemoState(state);return item as T;}
-  return {items:state.campaigns,page:1,limit:100,total:state.campaigns.length} as T;
+  const visible=state.campaigns.filter(c=>requestedCampaignVisible(c));return {items:visible,page:1,limit:100,total:visible.length} as T;
  }
  if(path.startsWith("/media")){if(path==="/media/local"&&method==="POST"){const item:MediaAsset={id:`media-${Date.now()}`,campaignId:String(body.campaignId),fileName:String(body.fileName),contentType:String(body.contentType),originalBytes:String(body.sizeBytes||0),status:"READY",durationSeconds:null,width:null,height:null,variants:{localPreview:true},thumbnailKey:null,errorMessage:null,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};state.media.unshift(item);state.activities.unshift({id:`act-${Date.now()}`,title:"Материал добавлен в медиатеку",detail:item.fileName,date:item.createdAt});writeDemoState(state);return item as T;}if(path==="/media/process"&&method==="POST")return {jobId:`job-${Date.now()}`,status:"QUEUED"} as T;if(path==="/media/upload-url")return {uploadUrl:"",objectKey:`local/${Date.now()}`,mediaId:`media-${Date.now()}`,requiredHeaders:{},expiresInSeconds:0} as T;const campaignId=path.split("/").pop();return state.media.filter(m=>m.campaignId===campaignId) as T;}
  if(path==="/workspace") return {documents:state.documents,payouts:state.payouts,activities:state.activities} as T;
@@ -102,7 +103,7 @@ async function request<T>(path:string,init:RequestInit={}):Promise<T>{
 export const api={
  health:()=>request<{status:string}>("/health/ready"),
  login:(email:string,password:string)=>IS_DEMO_MODE ? Promise.resolve(demoAuth(email,password) as {accessToken:string;refreshToken:string;tokenType:string;expiresIn:number;user:{id:string;email:string;role:string}}) : request<{accessToken:string;refreshToken:string;tokenType:string;expiresIn:number;user:{id:string;email:string;role:string}}>("/auth/login",{method:"POST",body:JSON.stringify({email,password})}),
- register:(email:string,password:string,fullName:string)=>IS_DEMO_MODE ? Promise.resolve(demoAuth(email,password,fullName)) : request<{accessToken:string;refreshToken:string;user:unknown}>("/auth/register",{method:"POST",body:JSON.stringify({email,password,fullName})}),
+ register:(email:string,password:string,fullName:string,role:"SUPER_ADMIN"|"ORG_ADMIN"|"CREATOR"="SUPER_ADMIN")=>IS_DEMO_MODE ? Promise.resolve(demoAuth(email,password,fullName,role)) : request<{accessToken:string;refreshToken:string;user:unknown}>("/auth/register",{method:"POST",body:JSON.stringify({email,password,fullName,role})}),
  creators:(page=1,limit=25,q="")=>request<Page<Creator>>(`/creators?page=${page}&limit=${limit}&q=${encodeURIComponent(q)}`),
  createCreator:(data:Record<string,unknown>)=>request<Creator>("/creators",{method:"POST",body:JSON.stringify(data)}),
  campaigns:(page=1,limit=25)=>request<Page<Campaign>>(`/campaigns?page=${page}&limit=${limit}`),
