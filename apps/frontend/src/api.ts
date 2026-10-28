@@ -28,7 +28,7 @@ function demoAuth(email:string,password:string,fullName?:string) {
     return {accessToken:`demo-token-${user.id}`,refreshToken:"demo-refresh-token",tokenType:"Bearer",expiresIn:3600,user:{id:user.id,email:user.email,role:user.role,fullName:user.fullName}};
   }
   const user=users.find(item=>item.email===normalizedEmail && item.password===password);
-  if(!user) throw new Error("Неверный email или пароль. Для теста сначала создайте аккаунт.");
+  if(!user) throw new Error("Неверный email или пароль. Сначала создайте аккаунт.");
   return {accessToken:`demo-token-${user.id}`,refreshToken:"demo-refresh-token",tokenType:"Bearer",expiresIn:3600,user:{id:user.id,email:user.email,role:user.role,fullName:user.fullName}};
 }
 export function setAccessToken(token:string|null){accessToken=token}
