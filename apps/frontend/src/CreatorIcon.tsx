@@ -1,5 +1,5 @@
 import {
-  BadgeCheck, Bell, BriefcaseBusiness, CalendarDays, ChartNoAxesCombined,
+  BadgeCheck, Bell, Briefcase, CalendarDays, LineChart,
   Check, Clapperboard, ClipboardList, FileText, FolderKanban, Handshake,
   LayoutDashboard, Lightbulb, LogOut, MessagesSquare, Plus, RefreshCw,
   Search, Settings2, TrendingUp, Upload, UserRound, UsersRound, WalletCards,
@@ -15,9 +15,9 @@ export type CreatorIconName =
 
 const icons: Record<CreatorIconName, LucideIcon> = {
   dashboard: LayoutDashboard, profile: UserRound, search: Search,
-  projects: FolderKanban, portfolio: BriefcaseBusiness, video: Clapperboard,
+  projects: FolderKanban, portfolio: Briefcase, video: Clapperboard,
   upload: Upload, brief: ClipboardList, calendar: CalendarDays,
-  messages: MessagesSquare, analytics: ChartNoAxesCombined, payments: WalletCards,
+  messages: MessagesSquare, analytics: LineChart, payments: WalletCards,
   contract: FileText, team: UsersRound, notifications: Bell, settings: Settings2,
   help: CircleHelp, verification: BadgeCheck, ideas: Lightbulb,
   collaboration: Handshake, growth: TrendingUp, logout: LogOut,
