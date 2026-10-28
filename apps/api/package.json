@@ -9,7 +9,8 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate deploy",
-    "admin:bootstrap": "node scripts/bootstrap-admin.cjs"
+    "admin:bootstrap": "node scripts/bootstrap-admin.cjs",
+    "test:tenant-isolation": "node scripts/test-tenant-isolation.cjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.750.0",
