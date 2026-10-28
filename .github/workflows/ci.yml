@@ -37,4 +37,6 @@ jobs:
       - run: pnpm --filter @ugs/api build
       - name: Test tenant isolation
         run: pnpm --filter @ugs/api test:tenant-isolation
+      - name: Test creator directory privacy
+        run: pnpm --filter @ugs/api test:creator-privacy
       - run: pnpm --filter @ugs/worker build
