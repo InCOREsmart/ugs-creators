@@ -19,7 +19,7 @@ const nav: { label: Section; icon: CreatorIconName }[] = [
 const roleName: Record<string, string> = { SUPER_ADMIN: "Кабинет владельца", ORG_ADMIN: "Кабинет бизнеса", MANAGER: "Менеджер", CREATOR: "Кабинет креатора" };
 const statusName: Record<string, string> = { SEARCH: "Поиск", NEGOTIATION: "Переговоры", BRIEF_ACCEPTED: "Бриф принят", CONTRACT: "Договор", CONTENT_CREATION: "Создание контента", APPROVAL: "Согласование", PUBLICATION: "Публикация", PAYMENT: "Оплата", COMPLETED: "Завершена", CANCELLED: "Отменена" };
 
-export default function BrandMark({ className = "brand-logo", decorative = false }: { className?: string; decorative?: boolean }) {
+function BrandMark({ className = "brand-logo", decorative = false }: { className?: string; decorative?: boolean }) {
   return <svg className={className} viewBox="0 0 96 96" fill="none" role={decorative ? undefined : "img"} aria-label={decorative ? undefined : "Логотип CREATOR"} aria-hidden={decorative ? true : undefined} xmlns="http://www.w3.org/2000/svg">
     <rect x="5" y="5" width="86" height="86" rx="27" fill="#F7F5F0"/>
     <path d="M62 27.5A27 27 0 1 0 62 68.5" stroke="#26312F" strokeWidth="8" strokeLinecap="round"/>
@@ -28,7 +28,7 @@ export default function BrandMark({ className = "brand-logo", decorative = false
   </svg>;
 }
 
-function App() {
+export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
