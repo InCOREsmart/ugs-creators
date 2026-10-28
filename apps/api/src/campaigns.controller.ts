@@ -1,10 +1,10 @@
 import { Body, Controller, Get, Param, Post, Patch, Query, Req, UseGuards, NotFoundException, ForbiddenException } from "@nestjs/common";
-import { IsIn, IsInt, IsOptional, IsString, Min, MinLength } from "class-validator";
+import { IsIn, IsInt, IsOptional, IsString, IsUUID, Min, MinLength } from "class-validator";
 import { PrismaService } from "./prisma.service";
 import { CampaignStatus } from "@prisma/client";
 import { JwtAuthGuard } from "./jwt-auth.guard";
-class CreateCampaignDto { @IsString() @MinLength(2) name!:string; @IsString() organizationId!:string; @IsOptional() @IsInt() @Min(0) budgetKopecks?:number; @IsOptional() @IsString() deadline?:string; }
-class AssignCreatorDto { @IsString() creatorId!:string; }
+class CreateCampaignDto { @IsString() @MinLength(2) name!:string; @IsUUID() organizationId!:string; @IsOptional() @IsInt() @Min(0) budgetKopecks?:number; @IsOptional() @IsString() deadline?:string; }
+class AssignCreatorDto { @IsUUID() creatorId!:string; }
 class AssignmentResponseDto { @IsIn(["ACCEPTED","DECLINED"]) status!:"ACCEPTED"|"DECLINED"; }
 class UpdateCampaignDto { @IsOptional() @IsString() @MinLength(2) name?:string; @IsOptional() @IsIn(["SEARCH","NEGOTIATION","BRIEF_ACCEPTED","CONTRACT","CONTENT_CREATION","APPROVAL","PUBLICATION","PAYMENT","COMPLETED","CANCELLED"]) status?:string; @IsOptional() @IsInt() @Min(0) budgetKopecks?:number; @IsOptional() @IsString() deadline?:string; }
 const statuses=["SEARCH","NEGOTIATION","BRIEF_ACCEPTED","CONTRACT","CONTENT_CREATION","APPROVAL","PUBLICATION","PAYMENT","COMPLETED","CANCELLED"];
